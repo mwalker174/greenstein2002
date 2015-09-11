@@ -30,6 +30,7 @@ void dynamicFRU(const double t,
 				int RyR_state[NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],
 				int CaMKII_state[NFRU_sim_max][Nclefts_FRU][Nmon_per_holo],
 				int LCCPhosph_state[NFRU_sim_max][Nclefts_FRU],
+				int RyRPhosph_state[NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],
 				int Ito2_state[NFRU_sim_max][Nclefts_FRU],
 				int mti[NFRU_sim_max],
 				unsigned long mt[NFRU_sim_max][mtN+1],
@@ -107,7 +108,7 @@ void dynamicFRU(const double t,
 		time_of_last_change=t;
 		if (current_phase==0) { // switching from low FRU number to high
 			if (NFRU_sim_factor>1) {
-				parallel_get_FRUs(FRU_states,LType_state,RyR_state,CaMKII_state,LCCPhosph_state,Ito2_state,mt,mti);
+				parallel_get_FRUs(FRU_states,LType_state,RyR_state,CaMKII_state,LCCPhosph_state,RyRPhosph_state,Ito2_state,mt,mti);
 
 				for(j=0;j<NFRU_sim_factor-1;j++) {
 					for(iFRU=0;iFRU<NFRU_sim_low;iFRU++) {
@@ -124,13 +125,16 @@ void dynamicFRU(const double t,
 								CaMKII_state[j*NFRU_sim_low+iFRU][icleft][i] = CaMKII_state[iFRU][icleft][i];
 							}
 							LCCPhosph_state[j*NFRU_sim_low+iFRU][icleft] = LCCPhosph_state[iFRU][icleft];
+							for(i=0;i<NRyRs_per_cleft;i++) {
+								RyRPhosph_state[j*NFRU_sim_low+iFRU][icleft][i] = RyRPhosph_state[iFRU][icleft][i];
+							}
 							Ito2_state[j*NFRU_sim_low+iFRU][icleft] = Ito2_state[iFRU][icleft];
 						}
 					}
 				}
 
 				// Redistribute data to slave processes
-				initialize_mpi_state(FRU_states,LType_state,RyR_state,CaMKII_state,LCCPhosph_state,Ito2_state,mti,mt);
+				initialize_mpi_state(FRU_states,LType_state,RyR_state,CaMKII_state,LCCPhosph_state,RyRPhosph_state,Ito2_state,mti,mt);
 			}
 
 			NFRU_sim=NFRU_sim_high;

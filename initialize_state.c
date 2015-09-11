@@ -28,6 +28,7 @@ void initialize_state(double state[N],
 		      int RyR_state[NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],
 		      int CaMKII_state[NFRU_sim_max][Nclefts_FRU][Nmon_per_holo], 
 		      int LCCPhosph_state[NFRU_sim_max][Nclefts_FRU],
+		      int RyRPhosph_state[NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],
 		      int Ito2_state[NFRU_sim_max][Nclefts_FRU],
 		      unsigned long mt[NFRU_sim_max][mtN+1],int mti[NFRU_sim_max])
 {
@@ -37,13 +38,13 @@ void initialize_state(double state[N],
 	char filepath[256];
 
 	int rewind_FRU;
-	const int rewind_FRU_max=1250;
+	const int rewind_FRU_max=250;
 
 	time_of_last_change=0.0;
 	rewind_FRU=min(NFRU_sim,rewind_FRU_max);
 
 	if (ic_file_flag) {
-	  int RyR_NFRU,FRU_NFRU,LCh_NFRU,CaMKII_NFRU,LCCPhosph_NFRU,Ito2_NFRU;
+	  int RyR_NFRU,FRU_NFRU,LCh_NFRU,CaMKII_NFRU,LCCPhosph_NFRU,RyRPhosph_NFRU,Ito2_NFRU;
 	  
 	  // if initial conditions are provided in a file, open the 
 	  // file and load the data
@@ -125,6 +126,27 @@ void initialize_state(double state[N],
 	    }
 	  }
 	  fclose(ic_file);
+
+	  sprintf(filepath,"%s/%s",ic_dir,ic_RyRPhosph_file);
+	  if ((ic_file=fopen(filepath,"rb"))==NULL) {
+	    fprintf(stderr,"Cannot open file '%s'!\n",filepath);
+	    abort();
+	  }
+	  RyRPhosph_NFRU=read_next_int(ic_file);
+	  printf("NFRU in RyRPhosph file =%d\n",RyRPhosph_NFRU);
+	  for(iFRU=0;iFRU<NFRU_sim;iFRU++) {
+	    for(icleft=0;icleft<Nclefts_FRU;icleft++) {
+	      for(k=0;k<NRyRs_per_cleft;k++) {
+		RyRPhosph_state[iFRU][icleft][k]=read_next_int(ic_file);
+	      }
+	    }
+	    if (((iFRU+1)%rewind_FRU)==0) {
+	      rewind(ic_file);
+	      RyRPhosph_NFRU=read_next_int(ic_file);
+	    }
+	  }
+	  fclose(ic_file);
+	  
 	  
 	  sprintf(filepath,"%s/%s",ic_dir,ic_Ito2_file);
 	  if ((ic_file=fopen(filepath,"rb"))==NULL) {
@@ -205,9 +227,9 @@ void initialize_state(double state[N],
 		// Otherwise, set inital conditions to default values 
 
 		state[index_V]= -0.9543106E+02;
-		state[index_mNa]= 0.2654309E-03;
-		state[index_hNa]= 0.9985519E+00;	
-		state[index_jNa]= 0.9987711E+00;		
+                state[index_mNa]= 0.2654309E-03;
+                state[index_hNa]= 0.9985519E+00;
+                state[index_jNa]= 0.9987711E+00;
 		state[index_Nai]= 0.1000000E+02;	
 		state[index_Ki] = 0.1554636E+03;
 		state[index_Cai]= 0.7954739E-04;	
@@ -241,6 +263,15 @@ void initialize_state(double state[N],
 		state[index_C3Herg]= 0.2e-02;
 		state[index_OHerg]= 0.0e+00;
 		state[index_IHerg]= 0.0e+00;
+                state[index_CytCaMKII_I]= 1.0e+00;
+                state[index_CytCaMKII_B]= 0.0e+00;
+                state[index_CytCaMKII_P]= 0.0e+00;
+                state[index_CytCaMKII_T]= 0.0e+00;
+                state[index_CytCaMKII_A]= 0.0e+00;
+                state[index_CytCaMKII_C]= 0.0e+00;
+                state[index_CytCaMKII_U]= 0.0e+00;
+                state[index_FracPLB_P]= 0.0e+00;
+
 
 		for(iFRU = 0;iFRU<NFRU_sim;iFRU++) {		
 			for(icleft = 0;icleft<Nclefts_FRU;icleft++) {			
@@ -253,6 +284,9 @@ void initialize_state(double state[N],
 					CaMKII_state[iFRU][icleft][k]=1;
 				}
 				LCCPhosph_state[iFRU][icleft] = 1;
+				for(k = 0;k<NRyRs_per_cleft;k++) {
+					RyRPhosph_state[iFRU][icleft][k] = 1;
+				}
 				Ito2_state[iFRU][icleft] = 2;
 			}
 			FRU_states[iFRU][index_frustates_CaJSR] = 0.7;   //  local JSR  
@@ -301,6 +335,9 @@ void initialize_state(double state[N],
 				for(k = 0;k<NRyRs_per_cleft;k++) {
 					RyR_state[iFRU][icleft][k] = 1;
 				}
+				for(k = 0;k<NRyRs_per_cleft;k++) {
+					RyRPhosph_state[iFRU][icleft][k] = 1;
+				}
 			}
 		}
 	}
@@ -315,10 +352,10 @@ void initialize_state(double state[N],
 	// Compute weighting factor for error scaling calculation in RK4 algorithm.
 	// These are approx. 1/(max_abs_value) for each state.
 
-	errweight[index_V] = 1.e-2; //0; //1.e-2; // not independent
-	errweight[index_mNa] = 1.0;
-	errweight[index_hNa] = 1.0;
-	errweight[index_jNa] = 1.0;
+	errweight[index_V] = 0; //1.e-2; // not independent
+        errweight[index_mNa] = 1.0;
+        errweight[index_hNa] = 1.0;
+        errweight[index_jNa] = 1.0;
 	errweight[index_Nai] = 0.1;
 	errweight[index_Ki] = 1/140.0;
 	errweight[index_Cai] = 1.e3;    // Ok?
@@ -352,6 +389,14 @@ void initialize_state(double state[N],
 	errweight[index_C3Herg]= 1.0;
 	errweight[index_OHerg]= 1.0;
 	errweight[index_IHerg]= 0.0; // 1.0, not independent
+        errweight[index_CytCaMKII_I]= 1.0;
+        errweight[index_CytCaMKII_B]= 1.0;
+        errweight[index_CytCaMKII_P]= 1.0;
+        errweight[index_CytCaMKII_T]= 1.0;
+        errweight[index_CytCaMKII_A]= 1.0;
+        errweight[index_CytCaMKII_C]= 1.0;
+        errweight[index_CytCaMKII_U]= 0.0; //not independent
+        errweight[index_FracPLB_P]= 1.0;
 
 	if (vclamp_flag) {
 	  state[index_V]=vclamp_hold;

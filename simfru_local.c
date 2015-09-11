@@ -36,6 +36,7 @@ void simfru_local(const double time0,const double timef,
 				  int RyR_state[Nclefts_FRU][NRyRs_per_cleft], 
 				  int CaMKII_state[Nclefts_FRU][Nmon_per_holo],
 				  int LCCPhosph_state[Nclefts_FRU],
+				  int RyRPhosph_state[Nclefts_FRU][NRyRs_per_cleft], 
 				  int Ito2_state[Nclefts_FRU],
 				  double FRU_states[Nstates_FRU],
 				  int *mti_loc,
@@ -69,6 +70,10 @@ void simfru_local(const double time0,const double timef,
 	double RyR_trans_probs[Nclefts_FRU][NRyRs_per_cleft][4];
 	int RyR_index[Nclefts_FRU][NRyRs_per_cleft][4];
 	int RyR_length[Nclefts_FRU][NRyRs_per_cleft];
+	double RyRPhosph_trans_rates[Nclefts_FRU][NRyRs_per_cleft][3];
+	double RyRPhosph_trans_probs[Nclefts_FRU][NRyRs_per_cleft][3];
+	int RyRPhosph_index[Nclefts_FRU][NRyRs_per_cleft][3];
+	int RyRPhosph_length[Nclefts_FRU][NRyRs_per_cleft];
 	double max_exit_rate,Accum_Prob;
 	double time_FRU,time_stepFRU;
 
@@ -129,8 +134,10 @@ void simfru_local(const double time0,const double timef,
 
 		NRyR_open[icleft]=0;
 		for(i=0;i<NRyRs_per_cleft;i++) {
-			if ((RyR_state[icleft][i]==O1_RyR)||(RyR_state[icleft][i]==O2_RyR) 
-				|| (RyR_state[icleft][i]==O3_RyR)) {
+			//if ((RyR_state[icleft][i]==O1_RyR)||(RyR_state[icleft][i]==O2_RyR) 
+			//	|| (RyR_state[icleft][i]==O3_RyR)) {
+			if (RyR_state[icleft][i]==O1_RyR) 
+				  {
 					NRyR_open[icleft] = NRyR_open[icleft] + 1;
 				}
 		}
@@ -147,9 +154,9 @@ void simfru_local(const double time0,const double timef,
 
 		// fru_rates returns the rate of exit from each currently occupied
 		// state into all neighboring states for each channel
-		max_exit_rate=fru_rates_local(LType_state,RyR_state,CaMKII_state,LCCPhosph_state,Ito2_state,FRUdep_states,FRU_states,
+		max_exit_rate=fru_rates_local(LType_state,RyR_state,CaMKII_state,LCCPhosph_state,RyRPhosph_state,Ito2_state,FRUdep_states,FRU_states,
 			LType_trans_rates,LType_index,LType_length, LType_Vinact_exitrate,
-			RyR_trans_rates,RyR_index,RyR_length,CaMKII_trans_rates,CaMKII_index,CaMKII_length,LCCPhosph_trans_rates,LCCPhosph_index,LCCPhosph_length,Ito2_exitrate,mti_loc,mt_loc);
+			RyR_trans_rates,RyR_index,RyR_length,CaMKII_trans_rates,CaMKII_index,CaMKII_length,LCCPhosph_trans_rates,LCCPhosph_index,LCCPhosph_length,RyRPhosph_trans_rates,RyRPhosph_index,RyRPhosph_length,Ito2_exitrate,mti_loc,mt_loc);
 
 		time_stepFRU = 0.1/max_exit_rate;
 		// 	time_stepFRU = 0.05/max_exit_rate
@@ -224,6 +231,13 @@ void simfru_local(const double time0,const double timef,
 			LCCPhosph_trans_probs[icleft][1] = time_stepFRU*LCCPhosph_trans_rates[icleft][1];
 			for(i=2;i<LCCPhosph_length[icleft];i++){
 				LCCPhosph_trans_probs[icleft][i] = time_stepFRU*LCCPhosph_trans_rates[icleft][i];
+			}
+			for(j=0;j<NRyRs_per_cleft;j++) {
+				RyRPhosph_trans_probs[icleft][j][0] = 1.0 - time_stepFRU*RyRPhosph_trans_rates[icleft][j][0];
+				RyRPhosph_trans_probs[icleft][j][1] = time_stepFRU*RyRPhosph_trans_rates[icleft][j][1];
+				for(i=2;i<RyRPhosph_length[icleft][j];i++){
+					RyRPhosph_trans_probs[icleft][j][i] = time_stepFRU*RyRPhosph_trans_rates[icleft][j][i];
+				}
 			}
 			Ito2_exitprob[icleft] = 1.0 - time_stepFRU*Ito2_exitrate[icleft];
 		} // for
@@ -309,6 +323,21 @@ void simfru_local(const double time0,const double timef,
 				LCCPhosph_state[icleft] = LCCPhosph_index[icleft][count];
 			}
 
+
+			for(i=0;i<NRyRs_per_cleft;i++) {
+				Accum_Prob = RyRPhosph_trans_probs[icleft][i][0];
+				if(unidev[i+2+NRyRs_per_cleft+Nmon_per_holo+1+base_ind]>Accum_Prob){
+					count = 1; // we know that state has been changed
+					Accum_Prob += RyRPhosph_trans_probs[icleft][i][1];
+					while (unidev[i+2+NRyRs_per_cleft+Nmon_per_holo+1+base_ind]>Accum_Prob){
+						count++;
+						Accum_Prob += RyRPhosph_trans_probs[icleft][i][count];
+					}
+					RyRPhosph_state[icleft][i] = RyRPhosph_index[icleft][i][count];
+				}
+			} // for
+
+
 			if (unidev[(icleft+1)*NRVseqs_per_cleft-1]>=Ito2_exitprob[icleft]) {
 				Ito2_state[icleft] = 3 - Ito2_state[icleft];
 			} // if
@@ -335,9 +364,10 @@ void simfru_local(const double time0,const double timef,
 				signal1[icleft] = 0;
 				NRyR_open[icleft]=0;
 				for(i = 0;i<NRyRs_per_cleft;i++) {
-					if ((RyR_state[icleft][i]==O1_RyR)
-						||(RyR_state[icleft][i]==O2_RyR) 
-						||(RyR_state[icleft][i]==O3_RyR)) 
+					//if ((RyR_state[icleft][i]==O1_RyR)
+					//	||(RyR_state[icleft][i]==O2_RyR) 
+					//	||(RyR_state[icleft][i]==O3_RyR)) 
+					if (RyR_state[icleft][i]==O1_RyR)
 					{
 						NRyR_open[icleft] = NRyR_open[icleft] + 1;
 					}

@@ -31,6 +31,7 @@ double fru_rates_local(int LType_state[Nclefts_FRU][Nindepstates_LType],
 		       int RyR_state[Nclefts_FRU][NRyRs_per_cleft],
                        int CaMKII_state[Nclefts_FRU][Nmon_per_holo],
 		       int LCCPhosph_state[Nclefts_FRU],
+		       int RyRPhosph_state[Nclefts_FRU][NRyRs_per_cleft],	
 		       int Ito2_state[Nclefts_FRU],
 		       const double FRUdep_states[Nstates_FRUdep],
 		       const double FRU_states[Nstates_FRU],
@@ -47,6 +48,9 @@ double fru_rates_local(int LType_state[Nclefts_FRU][Nindepstates_LType],
 		       double LCCPhosph_rates[Nclefts_FRU][4],
 		       int LCCPhosph_index[Nclefts_FRU][4],
 		       int LCCPhosph_length[Nclefts_FRU],
+		       double RyRPhosph_rates[Nclefts_FRU][NRyRs_per_cleft][3],
+		       int RyRPhosph_index[Nclefts_FRU][NRyRs_per_cleft][3],
+		       int RyRPhosph_length[Nclefts_FRU][NRyRs_per_cleft],
 		       double Ito2_exitrate[Nclefts_FRU],
 		       int *mti_loc,
 		       unsigned long mt_loc[mtN])
@@ -124,28 +128,50 @@ double fru_rates_local(int LType_state[Nclefts_FRU][Nindepstates_LType],
 
 	double max_rate;
 
-	double k12,k23,k34,k54,k25,k56;	// (ms-1)
-	const double k21=250.0,	k32=9.6, k43=0.07/0.06667*13.0,	k45=0.07;
-	const double k52=0.001235, k65=30.0; //	at 10 CaNSR	rises
-	const double k12cf=3000.0, k23cf=10.0*30000.0, k34cf=0.6*3000.0; //	(ms-1 mM-2)
-	const double k54cf=0.6*0.198,k25cf=10.0*300.0,k56cf=2.0*4.0*3000.0;
-	// parameters below	determine threshold	Ca levels for switching	between	different
-	// RyR models based	on rapid equilibrium approximations
-	double Sat_term;
-	// const double	k_rate=12.0**4.0/16.3/(1000.0**2))	
-	const double k_rate=0.00127215;	 
-	double Sat_term2;
-	// const double	k_rate2=43.0**4.0/(1000.0**2))
-	const double k_rate2=3.4188;
+/////////////////////////////////////////////////////////////////////////////////////
+//	OLD RyR Rates replaced by Shannon Model	
+//	double k12,k23,k34,k54,k25,k56;	// (ms-1)
+//	const double k21=250.0,	k32=9.6, k43=0.07/0.06667*13.0,	k45=0.07;
+//	const double k52=0.001235, k65=30.0; //	at 10 CaNSR	rises
+//	const double k12cf=3000.0, k23cf=10.0*30000.0, k34cf=0.6*3000.0; //	(ms-1 mM-2)
+//	const double k54cf=0.6*0.198,k25cf=10.0*300.0,k56cf=2.0*4.0*3000.0;
+//	// parameters below	determine threshold	Ca levels for switching	between	different
+//	// RyR models based	on rapid equilibrium approximations
+//	double Sat_term;
+//	// const double	k_rate=12.0**4.0/16.3/(1000.0**2))	
+//	const double k_rate=0.00127215;	 
+//	double Sat_term2;
+//	// const double	k_rate2=43.0**4.0/(1000.0**2))
+//	const double k_rate2=3.4188;
 
-	// const double	threshCa34to7=sqrt(k32*k_rate/(0.005*k34cf)) )	 //	Factor of 200 (0.005) difference in	rates 
-	const double threshCa34to7=0.0368369379834969;	 //	Factor of 200 (0.005) difference in	rates 
-	// const double	threshCa56to8=sqrt(k52*k_rate/(0.005*k56cf - k54cf)) )
-	const double threshCa56to8=0.00011447933531005 ;
+//	// const double	threshCa34to7=sqrt(k32*k_rate/(0.005*k34cf)) )	 //	Factor of 200 (0.005) difference in	rates 
+//	const double threshCa34to7=0.0368369379834969;	 //	Factor of 200 (0.005) difference in	rates 
+//	// const double	threshCa56to8=sqrt(k52*k_rate/(0.005*k56cf - k54cf)) )
+//	const double threshCa56to8=0.00011447933531005 ;
 
-	const double threshMAX=2.0;	
-	// const double	threshMAXCa	= sqrt(threshMAX*k_rate)) 
-	const double threshMAXCa = 0.0504410547074504; 
+//	const double threshMAX=2.0;	
+//	// const double	threshMAXCa	= sqrt(threshMAX*k_rate)) 
+//	const double threshMAXCa = 0.0504410547074504; 
+////////////////////////////////////////////////////////////////////////////////////////
+
+	//RyR rate constants
+	const double k_iCa=0.2967;
+	const double k_im = 0.0055;
+	const double k_oCa = 6500;
+	//const double k_oCa = 20*35;
+	const double k_om = 0.0683;
+	const double MinSR = 1.0;
+	const double MaxSR = 15.0;
+	const double EC50_SR = 0.45;
+	const double H_SR = 2.5;
+	double k_CaSRden = 1 + pow(EC50_SR/(FRU_states[index_frustates_CaJSR]),H_SR);
+	double k_CaSR = MaxSR - ((MaxSR - MinSR)/k_CaSRden);
+	double k_oSRCa = k_oCa/k_CaSR;
+	double k_iSRCa = k_iCa*k_CaSR;
+	const double kRyRPhosphCaMKII = 0.000238;
+	const double kRyRPhosphPKA = 0;
+	const double kRyRDephosph =0.000238*4;
+	const double CaShift = 1.3; //Ca sensitivity shifts by 1.3
 
 	//CaMKII rate constants
 	const double I_to_B = 0.00001; //nM^(-1)*ms^(-1)
@@ -436,8 +462,87 @@ double fru_rates_local(int LType_state[Nclefts_FRU][Nindepstates_LType],
 
 
 	// RyR 
+	
+	double k_RItoR = k_im;
+	double k_OtoR  = k_om;
+	double k_ItoO  = k_im;
+	double k_ItoRI = k_om;
+	double k_RtoO, k_RItoI, k_RtoRI, k_OtoI;
 
-	for(icleft = 0;icleft<Nclefts_FRU;icleft++) {
+	for(icleft = 0; icleft<Nclefts_FRU;icleft++) {
+		
+		if(RyRPhosph_state[icleft][i]==1){
+		k_RtoO  = k_oSRCa*CaSS[icleft]*CaSS[icleft];
+		k_RItoI = k_oSRCa*CaSS[icleft]*CaSS[icleft];
+		k_RtoRI = k_iSRCa*CaSS[icleft];
+		k_OtoI  = k_iSRCa*CaSS[icleft];
+		} else {
+		k_RtoO  = k_oSRCa*CaSS[icleft]*CaSS[icleft]*CaShift*CaShift;
+		k_RItoI = k_oSRCa*CaSS[icleft]*CaSS[icleft]*CaShift*CaShift;
+		k_RtoRI = k_iSRCa*CaSS[icleft];
+		k_OtoI  = k_iSRCa*CaSS[icleft];
+		}
+
+		for(i=0;i<NRyRs_per_cleft;i++) {
+	
+		   switch (RyR_state[icleft][i]) {
+
+		   case 1:
+	            RyR_rates[icleft][i][0] = k_RItoR + k_RItoI; 
+		    RyR_rates[icleft][i][1] = k_RItoR;
+		    RyR_rates[icleft][i][2] = k_RItoI;
+
+		    RyR_length[icleft][i] = 3;
+		    //				RyR_index[icleft][i][0] = 1;
+		    RyR_index[icleft][i][1] = 2;
+		    RyR_index[icleft][i][2] = 4;
+		    break;
+
+		   case 2:
+		    RyR_rates[icleft][i][0] = k_RtoRI + k_RtoO;
+		    RyR_rates[icleft][i][1] = k_RtoRI;
+		    RyR_rates[icleft][i][2] = k_RtoO;
+
+		    RyR_length[icleft][i] = 3;
+		    //				RyR_index[icleft][i][0] = 2;
+		    RyR_index[icleft][i][1] = 1;
+		    RyR_index[icleft][i][2] = 3;
+		    break;
+
+		   case 3:
+		    RyR_rates[icleft][i][0] = k_OtoR + k_OtoI;
+		    RyR_rates[icleft][i][1] = k_OtoR;
+		    RyR_rates[icleft][i][2] = k_OtoI;
+		    
+	        	RyR_length[icleft][i] = 3;
+		    //				RyR_index[icleft][i][0] = 3;
+		    RyR_index[icleft][i][1] = 2;
+		    RyR_index[icleft][i][2] = 4;
+		    break;
+
+		   case 4:
+		    RyR_rates[icleft][i][0] = k_ItoRI + k_ItoO;
+		    RyR_rates[icleft][i][1] = k_ItoRI;
+		    RyR_rates[icleft][i][2] = k_ItoO;
+
+		    RyR_length[icleft][i] = 3;
+		    //				RyR_index[icleft][i][0] = 4;
+		    RyR_index[icleft][i][1] = 1;
+		    RyR_index[icleft][i][2] = 3;
+		    break;
+
+		    default: //	Unknown	state
+		      printf("Unknown state %d in RyR %d cleft % d\n",RyR_state[icleft][i],i,icleft);
+		      break;
+	    }//switch
+	  }//for
+	}//for
+
+
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//Old RyR rates
+	/* for(icleft = 0;icleft<Nclefts_FRU;icleft++) {
 		Sat_term = min(threshMAX,(CaSS[icleft]*CaSS[icleft])/k_rate);
 		Sat_term2 =	min(threshMAX,(CaSS[icleft]*CaSS[icleft])/k_rate2);
 		k12	= k12cf	* Sat_term2;
@@ -800,6 +905,8 @@ double fru_rates_local(int LType_state[Nclefts_FRU][Nindepstates_LType],
 		  } // if
 		} // if
 	} // for
+	*/
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	// CaMKII
 	for(icleft = 0; icleft<Nclefts_FRU;icleft++){
@@ -972,11 +1079,47 @@ double fru_rates_local(int LType_state[Nclefts_FRU][Nindepstates_LType],
 			LCCPhosph_index[icleft][1] = 4;
 			LCCPhosph_index[icleft][2] = 5;
 			break;
-		}
-	}
+		}//switch
+
+        //RyRPhosph
+ 	  for(i=0;i<NRyRs_per_cleft;i++)
+	  {
+	   switch(RyRPhosph_state[icleft][i])
+	   {
+	     case 1:
+		RyRPhosph_rates[icleft][i][0] = CaMKII_ActCleft*kRyRPhosphCaMKII;
+		RyRPhosph_rates[icleft][i][1] = CaMKII_ActCleft*kRyRPhosphCaMKII;
+	 	RyRPhosph_length[icleft][i] = 2;
+	      	//			RyRPhosph_index[icleft][i][0] = 1;
+		RyRPhosph_index[icleft][i][1] = 2;
+		break;
+
+	     case 2:
+		RyRPhosph_rates[icleft][i][0] = kRyRDephosph + kRyRPhosphPKA;
+		RyRPhosph_rates[icleft][i][1] = kRyRDephosph;
+		RyRPhosph_rates[icleft][i][2] = kRyRPhosphPKA;
+		RyRPhosph_length[icleft][i] = 3;
+		//			RyRPhosph_index[icleft][i][0] = 2;
+		RyRPhosph_index[icleft][i][1] = 1;
+		RyRPhosph_index[icleft][i][2] = 3;
+		break;
+	
+	     case 3:
+		RyRPhosph_rates[icleft][i][0] = kRyRDephosph;
+		RyRPhosph_rates[icleft][i][1] = kRyRDephosph;
+		RyRPhosph_length[icleft][i] = 2;
+		//			RyRPhosph_index[icleft][i][0] = 3;
+		RyRPhosph_index[icleft][i][1] = 2;
+		break;
+
+		default: //unknown state
+		      printf("Unknown state %d in RyRPhosph %d cleft % d\n",RyRPhosph_state[icleft][i],i,icleft);
+		      break;
+	  }//switch
+	 }//for
+
+	}//for
  
-
-
 
 	// Ito2
 
@@ -1032,6 +1175,12 @@ double fru_rates_local(int LType_state[Nclefts_FRU][Nindepstates_LType],
 		max_rate = max(max_rate,CaMKII_rates[icleft][11][0]);
 
 		max_rate = max(max_rate,LCCPhosph_rates[icleft][0]);
+
+		max_rate = max(max_rate,RyRPhosph_rates[icleft][0][0]);
+		max_rate = max(max_rate,RyRPhosph_rates[icleft][1][0]);
+		max_rate = max(max_rate,RyRPhosph_rates[icleft][2][0]);
+		max_rate = max(max_rate,RyRPhosph_rates[icleft][3][0]);
+		max_rate = max(max_rate,RyRPhosph_rates[icleft][4][0]);
 	}
 
 #if 0
@@ -1068,6 +1217,14 @@ double fru_rates_local(int LType_state[Nclefts_FRU][Nindepstates_LType],
 		for(icleft=0; icleft<Nclefts_FRU; icleft++){
 			printf("%d: %g %d\n",icleft,
 				LCCPhosph_rates[icleft][0],LCCPhosph_state[icleft]);
+		}
+		for(icleft = 0;	icleft <Nclefts_FRU; icleft++)	{
+			printf("%d: %g %d %g %d %g %d %g %d %g %d\n",icleft,
+				RyRPhosph_rates[icleft][0][0],RyRPhosph_state[icleft][0],
+				RyRPhosph_rates[icleft][1][0],RyRPhosph_state[icleft][1],
+				RyRPhosph_rates[icleft][2][0],RyRPhosph_state[icleft][2],
+				RyRPhosph_rates[icleft][3][0],RyRPhosph_state[icleft][3],
+				RyRPhosph_rates[icleft][4][0],RyRPhosph_state[icleft][4]);
 		}
 	}
 #endif

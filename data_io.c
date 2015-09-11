@@ -29,17 +29,22 @@ FILE *open_states(const int filenumber)
 		fprintf(stderr,"Cannot open file '%s'!\n",filename);
 		exit(-2);
 	}
-	fprintf(filee,
-		"%s %s %s %s %s %s %s %s %s %s " 
-		"%s %s %s %s %s %s %s %s %s %s " 
-		"%s %s %s %s %s %s %s %s %s %s "
-		"%s %s %s %s %s %s %s %s\n",
-		"Time","V","mNa","hNa","jNa","Nai","Ki","Cai","CaNSR","xKs",
-		"LTRPNCa","HTRPNCa","C0Kv43","C1Kv43","C2Kv43","C3Kv43","OKv43","CI0Kv43","CI1Kv43","CI2Kv43",
-		"CI3Kv43","OIKv43","C0Kv14","C1Kv14","C2Kv14","C3Kv14","OKv14","CI0Kv14","CI1Kv14","CI2Kv14",
-		"CI3Kv14","OIKv14","CaToT","C1Herg","C2Herg","C3Herg","OHerg","IHerg");
 
-	return filee;
+        fprintf(filee,
+                "%s %s %s %s %s %s %s %s %s %s "
+                "%s %s %s %s %s %s %s %s %s %s "
+                "%s %s %s %s %s %s %s %s %s %s "
+                "%s %s %s %s %s %s %s %s %s %s "
+                "%s %s %s %s %s %s\n",
+
+                "Time","V","mNa","hNa","jNa","Nai","Ki","Cai","CaNSR","xKs",
+                "LTRPNCa","HTRPNCa","C0Kv43","C1Kv43","C2Kv43","C3Kv43","OKv43","CI0Kv43","CI1Kv43","CI2Kv43",
+                "CI3Kv43","OIKv43","C0Kv14","C1Kv14","C2Kv14","C3Kv14","OKv14","CI0Kv14","CI1Kv14","CI2Kv14",
+                "CI3Kv14","OIKv14","CaToT","C1Herg","C2Herg","C3Herg","OHerg","IHerg","CytCaMKII_I","CytCaMKII_B",
+                "CytCaMKII_P","CytCaMKII_T","CytCaMKII_A","CytCaMKII_C","CytCaMKII_U","FracPLB_P");
+
+        return filee;
+
 }
 
 FILE *open_otherstates(const int filenumber)
@@ -55,9 +60,9 @@ FILE *open_otherstates(const int filenumber)
 	}
 	fprintf(filee,
 		"%s %s %s %s %s %s %s %s %s %s " 
-		"%s %s %s %s %s %s %s %s %s %s\n",
+		"%s %s %s %s %s %s %s %s %s %s %s %s %s\n",
 		"Time","CaSSavg","CaJSRavg","JRyRtot","PRyR_open","PRyR_ready","PNorm_mode","PnotVinact","PLType_open","CaToT2",
-		"PIto2_open","CaJSRtot","CaSStot","CaMKII_Act","LCCP0","LCCP1","LCCP2","LCCP3","CaMKII_Phosph","Mode2Open");
+		"PIto2_open","CaJSRtot","CaSStot","CaMKII_Act","LCCP0","LCCP1","LCCP2","LCCP3","CaMKII_Phosph","Mode2Open","RyRP0","RyRP1","RyRP2");
 
 	return filee;
 }
@@ -201,6 +206,7 @@ void restart_data(const int filenumber,
 		  int RyR_state[NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],
 		  int CaMKII_state[NFRU_sim_max][Nclefts_FRU][Nmon_per_holo],
 		  int LCCPhosph_state[NFRU_sim_max][Nclefts_FRU],
+		  int RyRPhosph_state[NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],
 		  int Ito2_state[NFRU_sim_max][Nclefts_FRU],
 		  unsigned long mt[NFRU_sim_max][mtN+1],int mti[NFRU_sim_max])
 {
@@ -210,6 +216,7 @@ void restart_data(const int filenumber,
 	FILE *RyR_file;
 	FILE *CaMKII_file;
 	FILE *LCCPhosph_file;
+	FILE *RyRPhosph_file;
 	FILE *LCh_file;
 	FILE *FRU_file;
 	FILE *Ito2_file;
@@ -248,6 +255,11 @@ void restart_data(const int filenumber,
 		fprintf(stderr,"Problem opening file %s\n",filename);
 	}
 
+	sprintf(filename,"%sr_RyRPhosph.%d.txt",output_dir,filenumber);
+	if ((RyRPhosph_file=fopen(filename,"w+"))==NULL){
+		fprintf(stderr,"Problem opening file %s\n",filename);
+	}
+
 	sprintf(filename,"%sr_Ito2.%d.txt",output_dir,filenumber);
 	if ((Ito2_file=fopen(filename,"w+"))==NULL) {
 		fprintf(stderr,"Problem opening file %s\n",filename);
@@ -259,6 +271,7 @@ void restart_data(const int filenumber,
 	fprintf(RyR_file,"%d\n",NFRU_sim);
 	fprintf(CaMKII_file, "%d\n",NFRU_sim);
 	fprintf(LCCPhosph_file, "%d\n",NFRU_sim);
+	fprintf(RyRPhosph_file, "%d\n",NFRU_sim);
 	fprintf(LCh_file,"%d\n",NFRU_sim);
 	fprintf(Ito2_file,"%d\n",NFRU_sim);
 
@@ -278,6 +291,10 @@ void restart_data(const int filenumber,
 	    }
 	    fprintf(CaMKII_file,"\n");
 	    fprintf(LCCPhosph_file,"%d\n",LCCPhosph_state[iFRU][icleft]);
+	    for(k=0;k<NRyRs_per_cleft;k++) {
+	      fprintf(RyRPhosph_file,"%d ",RyRPhosph_state[iFRU][icleft][k]);
+	    }
+	    fprintf(RyRPhosph_file,"\n");
 	    fprintf(Ito2_file,"%d\n",Ito2_state[iFRU][icleft]);
 	  } 
 	}
@@ -287,6 +304,7 @@ void restart_data(const int filenumber,
 	fclose(RyR_file);
 	fclose(CaMKII_file);
 	fclose(LCCPhosph_file);
+	fclose(RyRPhosph_file);
 	fclose(LCh_file);
 	fclose(Ito2_file);
 

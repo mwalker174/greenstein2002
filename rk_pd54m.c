@@ -82,9 +82,8 @@ double rk54pd(double t,double tstep,double oldstepsize,
   notaccepted = 0;
   forcedaccept = 0;
   
-  //printf("Opened rk4 file \n");
   while (notdone) {
-    //printf("\n Still not done \n");
+
     stepsno = stepsno + 1;
     
     FRUdep_states0[index_frudep_V] = state[index_V];
@@ -123,12 +122,8 @@ double rk54pd(double t,double tstep,double oldstepsize,
     FRUdep_statesf[index_frudep_CaNSR] = y_1[index_CaNSR];
 
     end_time = start_time + step_size / 5.0;
-    //printf("TRERROR IS %e \n",tr_error); 
-    //printf("Step size in RK4 file is %e before calling distrib_simFRU \n", step_size);
-   // printf("End time in RK4 file is %e before calling distrib_simFRU \n", end_time);
     distrib_simFRU(start_time,end_time,FRUdep_states0,FRUdep_statesf,
 		   &Jxfer, &Jtr, &ICa, &Ito2);
-    //printf("just called distrib_simFRU in RK4 file \n");
     
     FRUdep_states0[index_frudep_V] = state[index_V];
     FRUdep_states0[index_frudep_Cai] = state[index_Cai];
@@ -254,8 +249,6 @@ double rk54pd(double t,double tstep,double oldstepsize,
       //puts("accept");
       
       success = 1;
-      //printf("Success is equal to 1 \n");
-      //printf("TR_ERROR is equal to %e \n",tr_error);
       
       if (start_time >= tstep) {
 	notdone = 0;
@@ -263,7 +256,6 @@ double rk54pd(double t,double tstep,double oldstepsize,
       } else {
 	
 	step_size = min(0.85 * step_size * pow(tolrk / tr_error, 0.2), 4.0 * step_size);
-	//printf("Step size is now %e \n",step_size);
 
 	//extstep = pd5_predict_step_size(0.9 * step_size * pow(tolrk / tr_error, 0.2),
 	//				start_time, start_time + step_max, state, current,
@@ -284,19 +276,12 @@ double rk54pd(double t,double tstep,double oldstepsize,
 	//
 	//}
 
-	if (period==0){
-	    time_to_stim = time_end + 1.0;
-	} else {
-	    time_to_stim = shift - fmod(start_time,period);
-        }
-	//time_to_stim = shift - fmod(start_time, period);
-	//printf("Time to Stim is %e\n", time_to_stim);
+	time_to_stim = shift - fmod(start_time, period);
 	if (time_to_stim < 0.0) {
 	  time_to_stim = time_to_stim + period;
 	}
 	if (time_to_stim < step_size) {
 	  step_size = max(step_min, time_to_stim - 0.5 * step_min);
-	  printf("Change in step size to %e\n", step_size);
 	}
       }
     } else {
@@ -328,14 +313,8 @@ double rk54pd(double t,double tstep,double oldstepsize,
 	// notaccepted++;
 	
 	step_size = 0.85 * step_size * pow(tolrk / tr_error, 0.2);
-	//printf("Step size was less than min and is now %e \n", step_size);
 	
-	if(period==0){
-	   time_to_stim = time_end + 1.0;
-	} else {
-	   time_to_stim = shift - fmod(start_time,period);
-	}
-	//time_to_stim = shift - fmod(start_time, period);
+	time_to_stim = shift - fmod(start_time, period);
 	if (time_to_stim < 0.0) {
 	  time_to_stim = time_to_stim + period;
 	}
@@ -351,26 +330,18 @@ double rk54pd(double t,double tstep,double oldstepsize,
       
       //limits to step size
       step_size = min(step_max, max(step_min, step_size));
-      //printf("Step size is %e\n", step_size);
       step_size = min(step_size, tstep - start_time);
-      //printf("Step size is now %e\n", step_size);
       //if (step_size < 1.e-10) {
       //notdone = 0;
       //
     }
-    //printf("Step size is %e\n", step_size);
-   // printf("Min step size is %d\n", step_min);
-   //  printf("Max step size is %d\n", step_max);
     
     //puts("out");
 
     oldstepsize = ostepsize;
-    //printf("Old step size is %e\n", oldstepsize);
   }
   
   return oldstepsize;
-  //printf("Returned old step size \n");
-
 }
 
 /*
@@ -480,7 +451,6 @@ double pd5_predict_step_size(double previous, double t, double tstep,
 				tr_error = huge_number;
 			}
 		}
-		//printf("TR_ERROR is %e	\n",tr_error);
 
 		if (tr_error < tolrk) {
 			if (been_here > 1) {
@@ -518,12 +488,7 @@ double pd5_predict_step_size(double previous, double t, double tstep,
 					been_here = 2;
 
 				//step_size < stimulus - start_time
-				if(period==0){
-				    time_to_stim = time_end + 1.0;
-				} else {
-				    time_to_stim = shift - fmod(start_time,period);
-				}
-				//time_to_stim = shift - fmod(start_time, period);
+				time_to_stim = shift - fmod(start_time, period);
 				if (time_to_stim < 0.0) {
 					time_to_stim = time_to_stim + period;
 				}

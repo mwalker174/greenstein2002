@@ -39,6 +39,14 @@
 #define index_C3Herg 34
 #define index_OHerg 35
 #define index_IHerg 36
+#define index_CytCaMKII_I 37
+#define index_CytCaMKII_B 38
+#define index_CytCaMKII_P 39
+#define index_CytCaMKII_T 40
+#define index_CytCaMKII_A 41
+#define index_CytCaMKII_C 42
+#define index_CytCaMKII_U 43
+#define index_FracPLB_P 44
 
 #define index_CaSSavg 0
 #define index_CaJSRavg 1
@@ -59,6 +67,9 @@
 #define index_LCCP3 16
 #define index_CaMKII_Phosph 17
 #define index_Mode2Open 18
+#define index_RyRP0 19
+#define index_RyRP1 20
+#define index_RyRP2 21
 
 #define index_INa 0
 #define index_IKr 1

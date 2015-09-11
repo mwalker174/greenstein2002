@@ -24,7 +24,7 @@
 #define SIMPLEDEBUG 0
 #define NOMEMCPY 1
 #define MAXPROCS 64
-#define MAXFILES 200
+#define MAXFILES 1000
 
 // definitions of the model
 #define Nclefts_FRU 4
@@ -32,26 +32,30 @@
 #define Nstates_FRUdep 3 
 
 #define Nstates_LType 12
-#define Nstates_RyR 6
+//#define Nstates_RyR 6
+#define Nstates_RyR 4
 #define NRyRs_per_cleft 5
 #define Nindepstates_LType 2
 #define Nmon_per_holo 12
 #define Nstates_CaMKII 7
 #define Nstates_LCCPhosph 6
+#define Nstates_RyRPhosph 3
 
-#define NRVseqs_per_cleft (2+NRyRs_per_cleft+Nmon_per_holo+1+1)
+#define NRVseqs_per_cleft (2+NRyRs_per_cleft+Nmon_per_holo+1+1 + NRyRs_per_cleft)
+//(12 state LCC model and Vdep LCC model)+RyRs+CaMKII subunits + LCCPhosphState + Ito state + RyRPhosphState for all RyRs
+
 #define NRVseqs_per_FRU (NRVseqs_per_cleft*Nclefts_FRU)
 
 // The number of FRUs simulated, in low FRU# phase and in high FRU# phase
-#define NFRU_sim_low 250
-#define NFRU_scale_low 50.0 // ratio of 12500/NFRU_sim_low
-#define NFRU_sim_high 250
-#define NFRU_scale_high 50.0 // ratio of 12500/NFRU_sim_high
+#define NFRU_sim_low 1000 
+#define NFRU_scale_low 12.5 // ratio of 12500/NFRU_sim_low
+#define NFRU_sim_high 1000
+#define NFRU_scale_high 12.5 // ratio of 12500/NFRU_sim_high
 
 // for array sizes, has to be NFRU_sim_max> NFRU_sim_high
 // MAX_LOCAL_NFRU should probably be the same as NFRU_sim_max
-#define NFRU_sim_max 250
-#define MAX_LOCAL_NFRU 250
+#define NFRU_sim_max 1000
+#define MAX_LOCAL_NFRU 1000
 
 // Border between low and high FRU number phases
 
@@ -93,7 +97,7 @@
 */
 
 #define time_start 0.0
-#define time_end 20000.0
+#define time_end 50000.0
 //#define time_end 50.0
 #define time_step 1.0
 #define step_min (1.e-6)
@@ -114,21 +118,21 @@
 //		(all pulses shifted by same amount when repetative
 //		 stimuli are used;
 
-#define pulse_duration 0
-#define pulse_amplitude 0
-#define  period 0
-#define shift 0 
+#define pulse_duration 0.5
+#define pulse_amplitude -100
+#define  period 1000
+#define shift 10 
 
 // Define parameters for voltage clamp.
-#define vclamp_flag 0
-#define vclamp_duration 500.0 
-#define vclamp_set   -80.0 
-#define vclamp_shift  2000.0
-#define vclamp_hold  -80.0 
-#define vclamp_period 800.0
+#define vclamp_flag 0 
+#define vclamp_duration 200.0 
+#define vclamp_set   0.0 
+#define vclamp_shift  0.0
+#define vclamp_hold  -70.0 
+#define vclamp_period 2000.0 
 
 // Define parameters for voltage clamp with a prepulse.
-#define vppclamp_flag 1
+#define vppclamp_flag 0
 #define vppclamp_ppset   -40.0 
 #define vppclamp_ppduration 100.0 
 #define vppclamp_shift 0.0 
@@ -136,16 +140,16 @@
 #define vppclamp_duration 200.0 
 #define vppclamp_hold  -80.0
 //next line added on Mar 12, 2008. Remember, I-I interval = period -(pp + pulse length) 
-#define vppclamp_period 1000.0
+#define vppclamp_period 500.0
 
 //	I-V relationship studies
 #define iv_flag 0 
 #define iv_clamp_duration 200.0 
-#define iv_clamp_period 300.0 
+#define iv_clamp_period 5000.0 
 #define iv_shift 10.0 
 #define iv_clamp_set   -40.0 
-#define iv_clamp_hold  -100.0 
-#define iv_clamp_step  10.0 
+#define iv_clamp_hold  -50.0 
+#define iv_clamp_step  5.0 
 
 // Define conditions for heart failure.
 #define chf_flag 0 
@@ -197,6 +201,7 @@
 #define ic_RyR_file "ic_RyR_stable.txt"
 #define ic_CaMKII_file "ic_CaMKII_stable.txt"
 #define ic_LCCPhosph_file "ic_LCCPhosph_stable.txt"
+#define ic_RyRPhosph_file "ic_RyRPhosph_stable.txt"
 #define ic_Ito2_file "ic_Ito2_stable.txt"
 #define ic_seeds_file "ic_randomseeds_stable.txt"
 
@@ -206,18 +211,18 @@
 //
 #define write_fru_props_flag 0
 #define fru_start 0
-#define fru_end 9
+#define fru_end 249
 
 //	Ndump x time_step   time interval for dump restart files
 //
-#define Ndump 20000
+#define Ndump 50000
 
 // Number of columns
 //	N   number of state variables 
 //	Ncur   number of variables in "current" array
-#define N 37
+#define N 45
 #define Ncur 24
-#define Nother 19
+#define Nother 22
 //#define NstatesAct 8
 /*
 
@@ -229,7 +234,7 @@ double MersenneTwisterOne_local(int *mti,unsigned long[mtN+1]);
 //void initActCoeff(double[NstatesAct]);
 void MersenneTwister_local(int *,unsigned long[mtN+1],const int,double *);
 void MersenneTwister_fast(int *,unsigned long [mtN+1],const int ,double *);
-void initialize_state(double[N],double[NFRU_sim_max][Nstates_FRU],int[NFRU_sim_max][Nclefts_FRU][Nindepstates_LType],int[NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],int[NFRU_sim_max][Nclefts_FRU][Nmon_per_holo],int[NFRU_sim_max][Nclefts_FRU],int[NFRU_sim_max][Nclefts_FRU],unsigned long[NFRU_sim_max][mtN+1],int[NFRU_sim_max]);
+void initialize_state(double[N],double[NFRU_sim_max][Nstates_FRU],int[NFRU_sim_max][Nclefts_FRU][Nindepstates_LType],int[NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],int[NFRU_sim_max][Nclefts_FRU][Nmon_per_holo],int[NFRU_sim_max][Nclefts_FRU],int[NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],int[NFRU_sim_max][Nclefts_FRU],unsigned long[NFRU_sim_max][mtN+1],int[NFRU_sim_max]);
 double rk54pd(double,double,double,double[N],double[Ncur]);
 double pd5_predict_step_size(double,double,double,double[N],double[Ncur],double,double,double,double);
 void calc_fru_avg(const double[N],const double[NFRU_sim_max][Nstates_FRU],const int[NFRU_sim_max][Nclefts_FRU][Nindepstates_LType],const int[NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],const int[NFRU_sim_max][Nclefts_FRU],double[Nother]);
@@ -245,16 +250,16 @@ void write_currents(FILE *,const double,const double[Ncur]);
 void open_fru_props_avg(const int filenumber,FILE *[]);
 void open_fru_props(const int,FILE *[]);
 FILE *open_fru_props_avgtot(const int);
-void write_fru_props(FILE *[],FILE *[],FILE *,const double,const double,const double,const double,double [NFRU_sim_max][Nstates_FRU],int [NFRU_sim_max][Nclefts_FRU][Nindepstates_LType],int [NFRU_sim_max][Nclefts_FRU],int [NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],int [NFRU_sim_max][Nclefts_FRU]);
-double fru_rates_local(int[Nclefts_FRU][Nindepstates_LType],int[Nclefts_FRU][NRyRs_per_cleft],int[Nclefts_FRU][Nmon_per_holo],int[Nclefts_FRU],int[Nclefts_FRU],const double[Nstates_FRUdep],const double[Nstates_FRU],double[Nclefts_FRU][4],int[Nclefts_FRU][4],
-		       int[Nclefts_FRU],double[Nclefts_FRU],double[Nclefts_FRU][NRyRs_per_cleft][4],int[Nclefts_FRU][NRyRs_per_cleft][4],int[Nclefts_FRU][NRyRs_per_cleft],double[Nclefts_FRU][Nmon_per_holo][4],int[Nclefts_FRU][Nmon_per_holo][4],int[Nclefts_FRU][Nmon_per_holo],double[Nclefts_FRU][4], int[Nclefts_FRU][4], int[Nclefts_FRU],double[Nclefts_FRU],int *,unsigned long[mtN+1]);
+void write_fru_props(FILE *[],FILE *[],FILE *,const double,const double,const double,const double,double [NFRU_sim_max][Nstates_FRU],int [NFRU_sim_max][Nclefts_FRU][Nindepstates_LType],int [NFRU_sim_max][Nclefts_FRU],int [NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],int [NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],int [NFRU_sim_max][Nclefts_FRU]);
+double fru_rates_local(int[Nclefts_FRU][Nindepstates_LType],int[Nclefts_FRU][NRyRs_per_cleft],int[Nclefts_FRU][Nmon_per_holo],int[Nclefts_FRU],int[Nclefts_FRU][NRyRs_per_cleft],int[Nclefts_FRU],const double[Nstates_FRUdep],const double[Nstates_FRU],double[Nclefts_FRU][4],int[Nclefts_FRU][4],
+		       int[Nclefts_FRU],double[Nclefts_FRU],double[Nclefts_FRU][NRyRs_per_cleft][4],int[Nclefts_FRU][NRyRs_per_cleft][4],int[Nclefts_FRU][NRyRs_per_cleft],double[Nclefts_FRU][Nmon_per_holo][4],int[Nclefts_FRU][Nmon_per_holo][4],int[Nclefts_FRU][Nmon_per_holo],double[Nclefts_FRU][4], int[Nclefts_FRU][4], int[Nclefts_FRU],double[Nclefts_FRU][NRyRs_per_cleft][3], int[Nclefts_FRU][NRyRs_per_cleft][3], int[Nclefts_FRU][NRyRs_per_cleft], double[Nclefts_FRU],int *,unsigned long[mtN+1]);
 void fcn_fru(const double,const double[Nstates_FRU],const double[Nstates_FRUdep],const double[Nclefts_FRU],const double[Nclefts_FRU],const int[Nclefts_FRU],double[Nstates_FRU]);
 void fcn(const double,double[N],double[N],double[Ncur],const int,const double,const double,const double,const double);
-void simfru_local(const double,const double,double[Nstates_FRUdep],double[Nstates_FRUdep],int[Nclefts_FRU][Nindepstates_LType],int[Nclefts_FRU][NRyRs_per_cleft],int[Nclefts_FRU][Nmon_per_holo],int[Nclefts_FRU],int[Nclefts_FRU],double[Nstates_FRU],int *,unsigned long [mtN+1]);
-void dynamicFRU(const double,double[N],double[NFRU_sim_max][Nstates_FRU],int[NFRU_sim_max][Nclefts_FRU][Nindepstates_LType],int[NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],int[NFRU_sim_max][Nclefts_FRU][Nmon_per_holo],int[NFRU_sim_max][Nclefts_FRU],int[NFRU_sim_max][Nclefts_FRU],int[NFRU_sim_max],unsigned long[NFRU_sim_max][mtN+1],const double,const double);
+void simfru_local(const double,const double,double[Nstates_FRUdep],double[Nstates_FRUdep],int[Nclefts_FRU][Nindepstates_LType],int[Nclefts_FRU][NRyRs_per_cleft],int[Nclefts_FRU][Nmon_per_holo],int[Nclefts_FRU],int[Nclefts_FRU][NRyRs_per_cleft],int[Nclefts_FRU],double[Nstates_FRU],int *,unsigned long [mtN+1]);
+void dynamicFRU(const double,double[N],double[NFRU_sim_max][Nstates_FRU],int[NFRU_sim_max][Nclefts_FRU][Nindepstates_LType],int[NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],int[NFRU_sim_max][Nclefts_FRU][Nmon_per_holo],int[NFRU_sim_max][Nclefts_FRU],int[NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],int[NFRU_sim_max][Nclefts_FRU],int[NFRU_sim_max],unsigned long[NFRU_sim_max][mtN+1],const double,const double);
 void lastcall(double,double[N],double[Ncur]);
 void initialize_ran(unsigned long[NFRU_sim_max][mtN+1],int[NFRU_sim_max]);
-void restart_data(const int,double[N],double[NFRU_sim_max][Nstates_FRU],int[NFRU_sim_max][Nclefts_FRU][Nindepstates_LType],int[NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],int[NFRU_sim_max][Nclefts_FRU][Nmon_per_holo],int[NFRU_sim_max][Nclefts_FRU],int[NFRU_sim_max][Nclefts_FRU],unsigned long[NFRU_sim_max][mtN+1],int mti[NFRU_sim_max]);
+void restart_data(const int,double[N],double[NFRU_sim_max][Nstates_FRU],int[NFRU_sim_max][Nclefts_FRU][Nindepstates_LType],int[NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],int[NFRU_sim_max][Nclefts_FRU][Nmon_per_holo],int[NFRU_sim_max][Nclefts_FRU],int[NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],int[NFRU_sim_max][Nclefts_FRU],unsigned long[NFRU_sim_max][mtN+1],int mti[NFRU_sim_max]);
 void sgrnd_local(unsigned long,int *,unsigned long[mtN+1]);
 double read_next_double(FILE *);
 int read_next_int(FILE *);
@@ -262,7 +267,7 @@ void initialize_mpi(int *,char **,int *,int *);
 void end_mpi(void);
 void parallel(void);
 void distrib_simFRU(double,double,double[Nstates_FRUdep],double[Nstates_FRUdep],double *,double *,double *,double *);
-void parallel_get_FRUs(double[NFRU_sim_max][Nstates_FRU],int[NFRU_sim_max][Nclefts_FRU][Nindepstates_LType],int[NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],int[NFRU_sim_max][Nclefts_FRU][Nmon_per_holo],int[NFRU_sim_max][Nclefts_FRU],int[NFRU_sim_max][Nclefts_FRU],unsigned long[NFRU_sim_max][mtN+1],int[NFRU_sim_max]);
+void parallel_get_FRUs(double[NFRU_sim_max][Nstates_FRU],int[NFRU_sim_max][Nclefts_FRU][Nindepstates_LType],int[NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],int[NFRU_sim_max][Nclefts_FRU][Nmon_per_holo],int[NFRU_sim_max][Nclefts_FRU],int[NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],int[NFRU_sim_max][Nclefts_FRU],unsigned long[NFRU_sim_max][mtN+1],int[NFRU_sim_max]);
 void send_save_state(void);
 void parallel_save_state(void);
 void parallel_resume_state(void);
@@ -270,11 +275,11 @@ void parallel_compute_simfru(void);
 void send_resume_state(void);
 void send_calc_fru_flux(double[Nstates_FRUdep],double *, double *, double *, double *);
 void send_calc_fru_avg(double[N],double[Nother]);
-void initialize_mpi_state(double[NFRU_sim_max][Nstates_FRU],int[NFRU_sim_max][Nclefts_FRU][Nindepstates_LType],int[NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],int[NFRU_sim_max][Nclefts_FRU][Nmon_per_holo],int[NFRU_sim_max][Nclefts_FRU],int[NFRU_sim_max][Nclefts_FRU],int[NFRU_sim_max],unsigned long[NFRU_sim_max][mtN+1]);
+void initialize_mpi_state(double[NFRU_sim_max][Nstates_FRU],int[NFRU_sim_max][Nclefts_FRU][Nindepstates_LType],int[NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],int[NFRU_sim_max][Nclefts_FRU][Nmon_per_holo],int[NFRU_sim_max][Nclefts_FRU],int[NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],int[NFRU_sim_max][Nclefts_FRU],int[NFRU_sim_max],unsigned long[NFRU_sim_max][mtN+1]);
 void calc_fru_flux_local(int,int[NFRU_sim_max][Nclefts_FRU][Nindepstates_LType],int[NFRU_sim_max][Nclefts_FRU],int[NFRU_sim_max][Nclefts_FRU],double[NFRU_sim_max][Nstates_FRU],double[4]);
 void parallel_calc_fru_avg(void);
 void parallel_calc_fru_flux(void);
-void calc_fru_avg_local(double[18],int,double[MAX_LOCAL_NFRU][Nstates_FRU],int[MAX_LOCAL_NFRU][Nclefts_FRU][Nindepstates_LType],int[MAX_LOCAL_NFRU][Nclefts_FRU][NRyRs_per_cleft],int[MAX_LOCAL_NFRU][Nclefts_FRU][Nmon_per_holo],int[MAX_LOCAL_NFRU][Nclefts_FRU],int[MAX_LOCAL_NFRU][Nclefts_FRU]);
+void calc_fru_avg_local(double[21],int,double[MAX_LOCAL_NFRU][Nstates_FRU],int[MAX_LOCAL_NFRU][Nclefts_FRU][Nindepstates_LType],int[MAX_LOCAL_NFRU][Nclefts_FRU][NRyRs_per_cleft],int[MAX_LOCAL_NFRU][Nclefts_FRU][Nmon_per_holo],int[MAX_LOCAL_NFRU][Nclefts_FRU],int[MAX_LOCAL_NFRU][Nclefts_FRU][NRyRs_per_cleft],int[MAX_LOCAL_NFRU][Nclefts_FRU]);
 
 // external variables
 
@@ -291,6 +296,7 @@ extern int LType_state_local[MAX_LOCAL_NFRU][Nclefts_FRU][Nindepstates_LType];
 extern int RyR_state_local[MAX_LOCAL_NFRU][Nclefts_FRU][NRyRs_per_cleft];
 extern int CaMKII_state_local[MAX_LOCAL_NFRU][Nclefts_FRU][Nmon_per_holo];
 extern int LCCPhosph_state_local[MAX_LOCAL_NFRU][Nclefts_FRU];
+extern int RyRPhosph_state_local[MAX_LOCAL_NFRU][Nclefts_FRU][NRyRs_per_cleft];
 extern int Ito2_state_local[MAX_LOCAL_NFRU][Nclefts_FRU];
 extern int iv_n;
 extern unsigned long mt_local[MAX_LOCAL_NFRU][mtN+1];
@@ -300,6 +306,7 @@ extern int LType_state_local_hold[MAX_LOCAL_NFRU][Nclefts_FRU][Nindepstates_LTyp
 extern int RyR_state_local_hold[MAX_LOCAL_NFRU][Nclefts_FRU][NRyRs_per_cleft];
 extern int CaMKII_state_local_hold[MAX_LOCAL_NFRU][Nclefts_FRU][Nmon_per_holo];
 extern int LCCPhosph_state_local_hold[MAX_LOCAL_NFRU][Nclefts_FRU];
+extern int RyRPhosph_state_local_hold[MAX_LOCAL_NFRU][Nclefts_FRU][NRyRs_per_cleft];
 extern int Ito2_state_local_hold[MAX_LOCAL_NFRU][Nclefts_FRU];
 extern unsigned long mt_local_hold[MAX_LOCAL_NFRU][mtN+1];
 extern int mti_local_hold[MAX_LOCAL_NFRU];
@@ -338,8 +345,8 @@ extern double NFRU_sim_factor;
 #define Oy_LType 2
 #define Cy_LType 1
 #define O1_RyR 3
-#define O2_RyR 4
-#define O3_RyR 7
+//#define O2_RyR 4
+//#define O3_RyR 7
 #define O_Ito2 2
 #define C_Ito2 1
 
@@ -353,5 +360,8 @@ extern const double  LTRPNtot,HTRPNtot,khtrpn_plus,khtrpn_minus,kltrpn_plus,kltr
 extern const double  CMDNtot,EGTAtot,KmCMDN,KmEGTA;
 extern const double  JRyRmax,tautr,tauxfer,tauss2ss;
 extern const double  SSCaM,PP1,PP2A,VmaxPP1,VmaxPP2A;
+extern const double  CytPP2A,KmPP2A,CytPP1,KmPP1;
+extern const double  CaMKII_tot, VmaxCaMKII_PLB, KmCaMKII_PLB;
+extern const double  VmaxPP1_PLB, KmPP1_PLB, PLB_tot;
 
 

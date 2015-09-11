@@ -34,6 +34,7 @@ void write_fru_props(FILE *filee[],FILE *file_avg[],FILE *file_avg_all,
 		     int LType_state[NFRU_sim_max][Nclefts_FRU][Nindepstates_LType],
 		     int LCCPhosph_state[NFRU_sim_max][Nclefts_FRU],
 		     int RyR_state[NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],
+		     int RyRPhosph_state[NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],
 		     int Ito2_state[NFRU_sim_max][Nclefts_FRU])
 {
   double VF_over_RT,VFsq_over_RT;
@@ -109,8 +110,10 @@ void write_fru_props(FILE *filee[],FILE *file_avg[],FILE *file_avg_all,
       }
       NRyR_open[jcleft]=0;
       for(i = 0;i<NRyRs_per_cleft;i++) {
-	if ((RyR_state[j][jcleft][i]==O1_RyR)||(RyR_state[j][jcleft][i]==O2_RyR)
-	    ||(RyR_state[j][jcleft][i]==O3_RyR)) {
+	//if ((RyR_state[j][jcleft][i]==O1_RyR)||(RyR_state[j][jcleft][i]==O2_RyR)
+	//    ||(RyR_state[j][jcleft][i]==O3_RyR)) {
+	if (RyR_state[j][jcleft][i]==O1_RyR)
+	     {
 	  NRyR_open[jcleft] = NRyR_open[jcleft] + 1;
 	}
       }

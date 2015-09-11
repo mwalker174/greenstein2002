@@ -24,13 +24,14 @@
 // Calculate additional output quantities that are algebraically 
 // related to the state variables and stored in 'otherstate'
 
-void calc_fru_avg_local(double num_stat[18],
+void calc_fru_avg_local(double num_stat[21],
 			int NFRU_loc,
 			double FRU_states_loc[MAX_LOCAL_NFRU][Nstates_FRU],
 			int LType_state_loc[MAX_LOCAL_NFRU][Nclefts_FRU][Nindepstates_LType],
 			int RyR_state_loc[MAX_LOCAL_NFRU][Nclefts_FRU][NRyRs_per_cleft],
 			int CaMKII_state_loc[MAX_LOCAL_NFRU][Nclefts_FRU][Nmon_per_holo],
 			int LCCPhosph_state_loc[MAX_LOCAL_NFRU][Nclefts_FRU],
+			int RyRPhosph_state_loc[MAX_LOCAL_NFRU][Nclefts_FRU][NRyRs_per_cleft],
 			int Ito2_state_loc[MAX_LOCAL_NFRU][Nclefts_FRU])
 {
   double CaSS,CaJSR,CaTOT_SS,CaTOT_JSR;
@@ -42,6 +43,7 @@ void calc_fru_avg_local(double num_stat[18],
   double LCCP0, LCCP1, LCCP2, LCCP3;
   double Mode2Open;
   double CaMKII_Phosph;
+  double RyRP0, RyRP1, RyRP2;
 
   CaSS = 0.0;
   CaJSR = 0.0;
@@ -62,6 +64,9 @@ void calc_fru_avg_local(double num_stat[18],
   LCCP3 = 0.0;
   Mode2Open = 0.0;
   CaMKII_Phosph = 0.0;
+  RyRP0 = 0.0;
+  RyRP1 = 0.0;
+  RyRP2 = 0.0;
 
   //Note: this vector is also defined in fru_rates_local.c
   Act_coeff[0]=0.0;
@@ -82,14 +87,26 @@ void calc_fru_avg_local(double num_stat[18],
 	FRU_states_loc[iFRU][icleft+1]* (1.0+BSRtot/(KBSR+FRU_states_loc[iFRU][icleft+1])+BSLtot/(KBSL+FRU_states_loc[iFRU][icleft+1]));
       NRyR_open=0;
       for(i=0;i<NRyRs_per_cleft;i++) {
-	if ((RyR_state_loc[iFRU][icleft][i]==O1_RyR)||(RyR_state_loc[iFRU][icleft][i]==O2_RyR)
-	    ||(RyR_state_loc[iFRU][icleft][i]==O3_RyR)) 
+//	if ((RyR_state_loc[iFRU][icleft][i]==O1_RyR)||(RyR_state_loc[iFRU][icleft][i]==O2_RyR)
+//	    ||(RyR_state_loc[iFRU][icleft][i]==O3_RyR)) 
+	if (RyR_state_loc[iFRU][icleft][i]==O1_RyR)
 	  {
 	    NRyR_open = NRyR_open + 1;
 	  }
 	if ((RyR_state_loc[iFRU][icleft][i]==1)||(RyR_state_loc[iFRU][icleft][i]==2)) 
 	  {
 	    NRyR_ready = NRyR_ready + 1;
+	  }
+	if (RyRPhosph_state_loc[iFRU][icleft][i]==1)
+	  {
+	    RyRP0 = RyRP0 + 1.0;
+	  } else {
+	      if (RyRPhosph_state_loc[iFRU][icleft][i]==2)
+		{
+	    	  RyRP1 = RyRP1 + 1.0;
+		} else {
+		  RyRP2 = RyRP2 + 1.0;
+		}
 	  }
       }
       JRyR = JRyR + JRyRmax*((double)NRyR_open)*(FRU_states_loc[iFRU][index_frustates_CaJSR]-FRU_states_loc[iFRU][icleft+1]);
@@ -165,6 +182,9 @@ void calc_fru_avg_local(double num_stat[18],
   num_stat[15]=LCCP3;
   num_stat[16]=CaMKII_Phosph;
   num_stat[17]=Mode2Open;
+  num_stat[18]=RyRP0;
+  num_stat[19]=RyRP1;
+  num_stat[20]=RyRP2;
 }
 
 

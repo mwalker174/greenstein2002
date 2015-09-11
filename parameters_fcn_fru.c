@@ -49,7 +49,8 @@ const double  PCa1= (1.5/2.8*0.2*0.9*0.9468e-11); //(cm/s) *uF
 //const double  PCa2= 1.7*(1.5/2.8*0.2*0.9*0.9468e-11); //(cm/s) * uF 
 const double  PCa2=(1.5/2.8*0.2*0.9*0.9468e-11); //(cm/s) * uF 
 
-const double  PCl= 2.65e-15; //(cm/s) *uF 
+//const double  PCl= 2.65e-15; //(cm/s) *uF 
+const double  PCl= 0.5*2.65e-15; //(cm/s) *uF 
 	 
 const double  BSLtot=   1.124;  // (mM)
 const double  CSQNtot= 13.5; 
@@ -90,23 +91,47 @@ const double  tauxfer= 0.005;
 	// intersubspace transfer rate (1/ms)
 //const double  tauss2ss= (10.0*tauxfer);
 const double  tauss2ss= (10.0*0.005);
+//Changed on Sept 24
+//const double  tauss2ss= 1.5*(10.0*0.005);
 
 /*-----------------CaMKII Parameters----------------------------------*/
 const double SSCaM= 0.2; 
        // Subspace calmodulin (mM) corresponding to 20 CaMs/subspace
-const double PP1 =1;//Change made on Mar 27, 2008 200;
+const double PP1 = 5/12; //1;//Used to be 1 but made change on may 9 to see effects of reduced PP1. Change made on Mar 27, 2008 200;
        // PP1 subspace concentration (uM) corresponding to 10 molecules/subspace
-const double PP2A = 0.6;
+const double PP2A = 2*0.6; //0.6;
 //25; //Change made on Mar 27, 2008 25;
        // PP2A subspace concentration (uM) corresponding to 10 molecules/subspace
-const double VmaxPP1= 0.0065;
+const double VmaxPP1= (12/5)*0.0065;
 //0.00496;//Change made on Mar 27, 2008 0.000019375;
        // Michaelis Menten constant (1/ms)
-const double VmaxPP2A= 0.001199;
-//0.000035;
+//const double VmaxPP2A= 0.001199;
+const double VmaxPP2A= 0.001199; //2*0.001199;
+// 0.000035;
        // Michaelis Menten constant (1/ms)
 
+const double CytPP2A= 2.977; //cytosolic concentration in nM (Pinna and duBell papers used to calculate this value)
 
+const double KmPP2A= 5100; //(nM) (from Kikuchi paper)
+
+const double CytPP1= 14300; //(nM) (from duBell paper)
+
+const double KmPP1= 11000; //(nM) (from Bradshaw paper)
+
+//correct value
+const double CaMKII_tot =3.159; //(nM) (from Kranias and Ishida papers)
+//try different values:
+//const double CaMKII_tot= 0*3.159; //(nM) 
+
+const double VmaxCaMKII_PLB= 10.53; //(1/([CaMKII](nM)*msec) (using data from Kranias, Ishida and Gupta papers)
+
+const double KmCaMKII_PLB= 1644.7; //(nM) (from Gupta,Kranias paper and page 164 of Bers book)
+
+const double VmaxPP1_PLB = 0.01561;//(same as VmaxPP1- rate of PP1 on phosphorylase a) (From MacDougall paper) //changed from 0.0065 on Oct 23, 2008
+
+const double KmPP1_PLB= 5000; //(nM) (from MacDougall paper)
+
+const double PLB_tot = 100000; //(nM) (from Bers book, page 165)
 
 /******
 Act_coeff[0]=0;

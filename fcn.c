@@ -39,9 +39,9 @@ void fcn(const double time,double state[N],double Fstate[N],double current[Ncur]
 	//-------LOCAL STATE VARIABLE ARRAYS-------------------------------------------
 
 	double V;	// membane potential
-	double mNa;	// INa activation 
-	double hNa;	// INa fast inactivation
-	double jNa;	// INa slow inactivation
+        double mNa;     // INa activation
+        double hNa;     // INa fast inactivation
+        double jNa;     // INa slow inactivation
 	double xKs;	// IKs activation
 	double Nai;	// intracellular Na+ conc.
 	double Ki;	// intracellular K+ conc.
@@ -76,13 +76,22 @@ void fcn(const double time,double state[N],double Fstate[N],double current[Ncur]
 	double C3Herg;   //HERG channel state C3
 	double OHerg;    //HERG channel state O (Open)
 	double IHerg;   //HERG channel state I1(Inactivated)
+        double CytCaMKII_I; //cytosolic CaMKII state I
+        double CytCaMKII_B; //cytosolic CaMKII state B
+        double CytCaMKII_P; //cytosolic CaMKII state P
+        double CytCaMKII_T; //cytosolic CaMKII state T
+        double CytCaMKII_A; //cytosolic CaMKII state A
+        double CytCaMKII_C; //cytosolic CaMKII state C
+        double CytCaMKII_U; //cytosolic CaMKII state U
+        double FracPLB_P; //fraction of phosphorylated PLB
+
 
 	//-------LOCAL STATE DERIVATIVE ARRAYS-----------------------------------------
 
 	double dV;	
-	double dmNa;
-	double dhNa;
-	double djNa;
+        double dmNa;
+        double dhNa;
+        double djNa;
 	double dxKs;
 	double dNai;
 	double dKi;
@@ -116,6 +125,15 @@ void fcn(const double time,double state[N],double Fstate[N],double current[Ncur]
 	double dC3Herg;
 	double dOHerg;
 	//double dIHerg;
+        double dCytCaMKII_I;
+        double dCytCaMKII_B;
+        double dCytCaMKII_P;
+        double dCytCaMKII_T;
+        double dCytCaMKII_A;
+        double dCytCaMKII_C;
+        //double dCytCaMKII_U;
+        double dFracPLB_P;
+
 
 	//-------LOCAL CURRENT AND FLUX ARRAYS-----------------------------------------
 
@@ -177,6 +195,8 @@ void fcn(const double time,double state[N],double Fstate[N],double current[Ncur]
 	/*	peak IK1  conductance (mS/uF) */
 	//UpK	const double GK1=2.8;
 	const double GK1=3.0; // 2.73 by Reza
+	//CHANGED ON Dec18, 2009
+	//const double GK1=2.73; // 2.73 by Reza
 
 	/*  peak IKp  conductance (mS/uF) */
 	const double GKp=1.2*0.002216; // 0.001 in stable C++
@@ -193,6 +213,7 @@ void fcn(const double time,double state[N],double Fstate[N],double current[Ncur]
 	const double KmK1=13.0;// Ca++ half sat. constant for IK1 (mM)
 	const double ksat=0.2;// Na+/Ca++ exch. sat. factor at negative potentials 
 	const double eta=0.35;// controls voltage dependence of Na+/Ca++ exch.
+	//const double INaKmax=1.5; // (uA/uF) CHANGED SEPT 2, 2009
 	const double INaKmax=1.3*0.693; // maximum Na+/K+ pump current (uA/uF)
 	// const double INaKmax=1.0*0.693; // in Canine C++
 	const double KmNai=10.0; // Na+  half sat. constant for Na+/K+ pump (mM)
@@ -201,16 +222,20 @@ void fcn(const double time,double state[N],double Fstate[N],double current[Ncur]
 	const double KmpCa=0.0005; // half sat. constant for sarcolemmal Ca++ pump (mM)
 
 	// max. background Ca++ current conductance (mS/uF)
-	const double GCab=3.3*7.684e-5; // 3e-5 in stable C++
+	const double GCab=0.0; // 3e-5 in stable C++
+	//What is right below is the default. Above was used Dec 20
+	//const double GCab=3.3*7.684e-5; // 3e-5 in stable C++
 	// const double GCab=20e-5; // 3e-5 in stable C++
 
 	// max. background Na+  current conductance (mS/uF)
 	//const double GNab=0.85*0.0031; // 0.000395 in stable C++
 	const double GNab=0.001; // 0.000395 in stable C++
+	//Above is what was used for Na background current
+	//const double GNab=0.0; // 0.000395 in stable C++
 
 	//-------SR PARAMETERS---------------------------------------------------------
 
-	const double Kfb=0.26e-3; // foward half sat. constant for Ca++ ATPase (mM)
+	const double Kfb=0.6e-3;//0.26e-3; // foward half sat. constant for Ca++ ATPase (mM)
 	const double Krb=1.8; // backward half sat. constant for Ca++ ATPase (mM)
 	const double KSR=1.0; // scaling factor for Ca++ ATPase
 	const double Nfb=0.75; // foward cooperativity constant for Ca++ ATPase
@@ -218,12 +243,19 @@ void fcn(const double time,double state[N],double Fstate[N],double current[Ncur]
 	const double vmaxf=1.53*137.0e-6; // Ca++ ATPase forward rate parameter (mM/ms)
 	const double vmaxr=1.53*137.0e-6; // Ca++ ATPase backward rate parameter (mM/ms)
 
+        //-------NEW PLB SR PARAMETERS-------------------------------------------------
+        const double Kfb_P = 0.1e-3; //forward half sat. constant for SERCA when PLB is phosphorylated
+        const double Krb_P = 1.8; // backward half sat. constant for SERCA when PLB is phosphorylated (assume same as Krb)
+
 	//-------Kv43 AND Kv14 CURRENT PARAMETERS FOR Ito1-----------------------------
 
 	const double KvScale=1.13*1.03*1.55; // Scale factor for Kv4.3 and Kv1.4 currents
 	const double Kv43Frac=0.77; // Fraction of Ito1 which is Kv4.3 current
+	//MODIFY Ito1 DENSITY (Dec18 change to add 0.95 factor)
 	const double GKv43=Kv43Frac*KvScale*0.1;  // Maximum conductance of Kv4.3 channel (mS/uF)
+	//const double GKv43=0.9*Kv43Frac*KvScale*0.1;  // Maximum conductance of Kv4.3 channel (mS/uF)
 	const double PKv14=(1.0-Kv43Frac)*KvScale*4.792933e-7; // Permeability of Kv1.4 channel (cm/s)
+	//const double PKv14=0.95*(1.0-Kv43Frac)*KvScale*4.792933e-7; // Permeability of Kv1.4 channel (cm/s)
 
 	//	NOTE: For step from -90mV to 40mV  
 	//	GKv43=0.1 and PKv14=4.792933e-7 ---> same peak current
@@ -319,6 +351,33 @@ void fcn(const double time,double state[N],double Fstate[N],double current[Ncur]
 	const double C2H_to_C3H=T_Const_HERG*0.02608362043337;
 	const double C3H_to_C2H=T_Const_HERG*0.14832978132145;
 
+        //-------CaMKII parameters----------------------------------------------
+        const double I_to_B = 0.00001;
+        const double I_to_U = 0.0000006;
+        const double k_auto = 0.0008;
+        const double B_to_I = 0.0008;
+        const double P_to_T = 0.001;
+        const double T_to_P = 0.001;
+        const double T_to_A = 0.0000008;
+        const double A_to_T = 0.00001;
+        const double A_to_C = 0.000146;
+        const double DupontKD = 1;
+        const double DupontKT = 1.3;
+        const double Act_I = 0.0;
+        const double Act_B = 0.75;
+        const double Act_P = 1.0;
+        const double Act_T = 0.8;
+        const double Act_A = 0.8;
+        const double Act_C = 0.17;
+        const double Act_U = 0.0;
+
+        double B_to_P;
+        double P_to_B;
+        double C_to_A;
+        double C_to_U;
+        double U_to_I;
+        double AvgCaMKII_Act;
+
 	//-------MEMBRANE CURRENT AND PUMP ENTITIES------------------------------------
 
 	double VF_over_RT, VFsq_over_RT;
@@ -328,6 +387,7 @@ void fcn(const double time,double state[N],double Fstate[N],double current[Ncur]
 	double alpha_m, beta_m, alpha_h, beta_h, alpha_j, beta_j;
 	double xKs_inf,tau_xKs;
 	double fb, rb, beta_i;
+        double fb_P, rb_P;
 	double a1, a2, a3, a4, a5;
 	double exp_VFRT,exp_etaVFRT;
 
@@ -336,50 +396,61 @@ void fcn(const double time,double state[N],double Fstate[N],double current[Ncur]
 
 	//-------MOVE STATES TO LOCAL VARIABLE ARRAYS----------------------------------
 
-	//   STATE#   STATE NAME
-	mNa=state[index_mNa];			//	 2	m
-	hNa=state[index_hNa];			//	 3	h
-	jNa=state[index_jNa];			//	 4	j
-	Nai=state[index_Nai];			//	 5	Nai
-	Ki=state[index_Ki];		//	 6	Ki
-	Cai=state[index_Cai];			//	 7	Cai
-	CaNSR=state[index_CaNSR];		//	 8	CaNSR
-	xKs=state[index_xKs];			//	10	xKs
-	LTRPNCa=state[index_LTRPNCa];		// 	11	LTRPNCa
-	HTRPNCa=state[index_HTRPNCa];		// 	12	HTRPNCa
+        //   STATE#   STATE NAME
+        mNa=state[index_mNa];                   //       2      m
+        hNa=state[index_hNa];                   //       3      h
+        jNa=state[index_jNa];                   //       4      j
+        Nai=state[index_Nai];                   //       5      Nai
+        Ki=state[index_Ki];             //       6      Ki
+        Cai=state[index_Cai];                   //       7      Cai
+        CaNSR=state[index_CaNSR];               //       8      CaNSR
+        xKs=state[index_xKs];                   //      10      xKs
+        LTRPNCa=state[index_LTRPNCa];           //      11      LTRPNCa
+        HTRPNCa=state[index_HTRPNCa];           //      12      HTRPNCa
 
-	C0Kv43=state[index_C0Kv43];		// 	13	Kv4.3 state C1
-	C1Kv43=state[index_C1Kv43];		// 	14	Kv4.3 state C2	
-	C2Kv43=state[index_C2Kv43];		// 	15	Kv4.3 state C3
-	C3Kv43=state[index_C3Kv43];		// 	16	Kv4.3 state C4
-	OKv43=state[index_OKv43];		// 	17	Kv4.3 state O (open];
-	CI0Kv43=state[index_CI0Kv43];		// 	18	Kv4.3 state I1
-	CI1Kv43=state[index_CI1Kv43];		// 	19	Kv4.3 state I2
-	CI2Kv43=state[index_CI2Kv43];		// 	20	Kv4.3 state I3
-	CI3Kv43=state[index_CI3Kv43];		// 	21	Kv4.3 state I4
-	//OIKv43=state[index_OIKv43];		// 	22	Kv4.3 state I5
-	OIKv43=1.0-CI0Kv43-CI1Kv43-CI2Kv43-CI3Kv43-OKv43-C0Kv43-C1Kv43-C2Kv43-C3Kv43;	// state[index_OIKv43)		// 	32	Kv1.4 state I5
+        C0Kv43=state[index_C0Kv43];             //      13      Kv4.3 state C1
+        C1Kv43=state[index_C1Kv43];             //      14      Kv4.3 state C2
+        C2Kv43=state[index_C2Kv43];             //      15      Kv4.3 state C3
+        C3Kv43=state[index_C3Kv43];             //      16      Kv4.3 state C4
+        OKv43=state[index_OKv43];               //      17      Kv4.3 state O (open];
+        CI0Kv43=state[index_CI0Kv43];           //      18      Kv4.3 state I1
+        CI1Kv43=state[index_CI1Kv43];           //      19      Kv4.3 state I2
+        CI2Kv43=state[index_CI2Kv43];           //      20      Kv4.3 state I3
+        CI3Kv43=state[index_CI3Kv43];           //      21      Kv4.3 state I4
+        //OIKv43=state[index_OIKv43];           //      22      Kv4.3 state I5
+        OIKv43=1.0-CI0Kv43-CI1Kv43-CI2Kv43-CI3Kv43-OKv43-C0Kv43-C1Kv43-C2Kv43-C3Kv43;   // state[index_OIKv43)          //      32      Kv1.4 state I5
 
-	C0Kv14=state[index_C0Kv14];		// 	23	Kv1.4 state C1
-	C1Kv14=state[index_C1Kv14];		// 	24	Kv1.4 state C2
-	C2Kv14=state[index_C2Kv14];		// 	25	Kv1.4 state C3
-	C3Kv14=state[index_C3Kv14];		// 	26	Kv1.4 state C4
-	OKv14=state[index_OKv14];		// 	27	Kv1.4 state O (open];
-	CI0Kv14=state[index_CI0Kv14];		// 	28	Kv1.4 state I1
-	CI1Kv14=state[index_CI1Kv14];		// 	29	Kv1.4 state I2
-	CI2Kv14=state[index_CI2Kv14];		// 	30	Kv1.4 state I3
-	CI3Kv14=state[index_CI3Kv14];		// 	31	Kv1.4 state I4
-	//OIKv14=state[index_OIKv14];		// 	32	Kv1.4 state I5
-	OIKv14=1.0-CI0Kv14-CI1Kv14-CI2Kv14-CI3Kv14-OKv14-C0Kv14-C1Kv14-C2Kv14-C3Kv14;
+        C0Kv14=state[index_C0Kv14];             //      23      Kv1.4 state C1
+        C1Kv14=state[index_C1Kv14];             //      24      Kv1.4 state C2
+        C2Kv14=state[index_C2Kv14];             //      25      Kv1.4 state C3
+        C3Kv14=state[index_C3Kv14];             //      26      Kv1.4 state C4
+        OKv14=state[index_OKv14];               //      27      Kv1.4 state O (open];
+        CI0Kv14=state[index_CI0Kv14];           //      28      Kv1.4 state I1
+        CI1Kv14=state[index_CI1Kv14];           //      29      Kv1.4 state I2
+        CI2Kv14=state[index_CI2Kv14];           //      30      Kv1.4 state I3
+        CI3Kv14=state[index_CI3Kv14];           //      31      Kv1.4 state I4
+        //OIKv14=state[index_OIKv14];           //      32      Kv1.4 state I5
+        OIKv14=1.0-CI0Kv14-CI1Kv14-CI2Kv14-CI3Kv14-OKv14-C0Kv14-C1Kv14-C2Kv14-C3Kv14;
 
-	CaTOT=state[index_CaTOT];		//	33	Total Cell Ca
+        CaTOT=state[index_CaTOT];               //      33      Total Cell Ca
 
-	C1Herg=state[index_C1Herg];		//	34	HERG state C1
-	C2Herg=state[index_C2Herg];		//	35	HERG state C2
-	C3Herg=state[index_C3Herg];		//	36	HERG state C3
-	OHerg=state[index_OHerg];		//	37	HERG state O1
-	//IHerg=state[index_IHerg];		//	37	HERG state I1
-	IHerg=1.0-OHerg-C1Herg-C2Herg-C3Herg;
+        C1Herg=state[index_C1Herg];             //      34      HERG state C1
+        C2Herg=state[index_C2Herg];             //      35      HERG state C2
+        C3Herg=state[index_C3Herg];             //      36      HERG state C3
+        OHerg=state[index_OHerg];               //      37      HERG state O1
+        //IHerg=state[index_IHerg];             //      37      HERG state I1
+        IHerg=1.0-OHerg-C1Herg-C2Herg-C3Herg;
+
+        CytCaMKII_I=state[index_CytCaMKII_I];   //      38      CaMKII state I
+        CytCaMKII_B=state[index_CytCaMKII_B];   //      39      CaMKII state B
+        CytCaMKII_P=state[index_CytCaMKII_P];   //      40      CaMKII state P
+        CytCaMKII_T=state[index_CytCaMKII_T];   //      41      CaMKII state T
+        CytCaMKII_A=state[index_CytCaMKII_A];   //      42      CaMKII state A
+        CytCaMKII_C=state[index_CytCaMKII_C];   //      43      CaMKII state C
+        //CytCaMKII_U=state[index_CytCaMKII_U];         44
+        CytCaMKII_U=1.0-CytCaMKII_I-CytCaMKII_B-CytCaMKII_P-CytCaMKII_T-CytCaMKII_A-CytCaMKII_C;
+        FracPLB_P=state[index_FracPLB_P];       //      45      Phosph PLB
+
 
 	//------------------------- Membrane potential V -----------------
 
@@ -561,11 +632,11 @@ void fcn(const double time,double state[N],double Fstate[N],double current[Ncur]
 
 	//-------COMPUTE INa, IKr, IKs, Ito1, IK1, INab, IKp---------------------------
 
-	// Make sure thatn mNa never goes negative
-	if (mNa<=0.0) mNa=1.e-15;
+        // Make sure thatn mNa never goes negative
+        if (mNa<=0.0) mNa=1.e-15;
 
-	//      INa = GNa*(mNa**3.0)*hNa*jNa*(V-ENa)
-	INa = GNa*(mNa*mNa*mNa)*hNa*jNa*(V-ENa);
+        //      INa = GNa*(mNa**3.0)*hNa*jNa*(V-ENa)
+        INa = GNa*(mNa*mNa*mNa)*hNa*jNa*(V-ENa);
 
 	fKo = pow(Ko/4.0,0.5);
 	IKr = GKr*fKo*OHerg*(V-EK);
@@ -650,73 +721,74 @@ void fcn(const double time,double state[N],double Fstate[N],double current[Ncur]
 
 	//-------COMPUTE GATING VARIABLE DERIVATIVES-----------------------------------
 
-	//...........INa
-	if(fabs(V+47.13)<= 1.e-4) {
-		alpha_m = 0.32/(0.1 - 0.005*(V+47.13));
-		//Taylor Approximation near 47.13mV
-	} else {
-		a1 = 0.32*(V+47.13);
-		alpha_m = a1/(1.0-exp(-0.1*(V+47.13)));
-	}
-	beta_m = 0.08*exp(-V/11.0);
+        //...........INa
+        if(fabs(V+47.13)<= 1.e-4) {
+                alpha_m = 0.32/(0.1 - 0.005*(V+47.13));
+                //Taylor Approximation near 47.13mV
+        } else {
+                a1 = 0.32*(V+47.13);
+                alpha_m = a1/(1.0-exp(-0.1*(V+47.13)));
+        }
+        beta_m = 0.08*exp(-V/11.0);
 
-	if (V>=-90.0) {	// Tau_m < 0.0035ms when V < -90mV
-		dmNa = alpha_m*(1.0-mNa)-beta_m*mNa;	
-	} else {
-		dmNa = 0.0;
-		mNa = alpha_m/(alpha_m + beta_m); // steady state approx.
-		state[index_mNa] = mNa;
-	}
+        if (V>=-90.0) { // Tau_m < 0.0035ms when V < -90mV
+                dmNa = alpha_m*(1.0-mNa)-beta_m*mNa;
+        } else {
+                dmNa = 0.0;
+                mNa = alpha_m/(alpha_m + beta_m); // steady state approx.
+                state[index_mNa] = mNa;
+        }
 
 #if 0
-	// Original Luo-Rudy formulation
+        // Original Luo-Rudy formulation
 
-	if(V<-40.0) {
-		alpha_h = 0.135*exp((80.0+V)/(-6.8));
-		beta_h = 3.56*exp(0.079*V)+310000.0*exp(0.35*V);
-		a1 = -127140.0*exp(0.2444*V);
-		a2 = 3.474e-5*exp(-0.04391*V);
-		a3 = 1.0+exp(0.311*(V+79.23));
-		alpha_j = (a1-a2)*(V+37.78)/a3;
-		a2 = 1.0+exp(-0.1378*(V+40.14));
-		beta_j = 0.1212*exp(-0.01052*V)/a2;
-	} else {
-		alpha_h = 0.0;
-		beta_h = 1.0/(0.13*(1.0+exp((V+10.66)/(-11.1))));
-		alpha_j = 0.0;
-		a1 = 1.0+exp(-0.1*(V+32.0));
-		beta_j = 0.3*exp(-2.535e-7*V)/a1;
-	}
+        if(V<-40.0) {
+                alpha_h = 0.135*exp((80.0+V)/(-6.8));
+                beta_h = 3.56*exp(0.079*V)+310000.0*exp(0.35*V);
+                a1 = -127140.0*exp(0.2444*V);
+                a2 = 3.474e-5*exp(-0.04391*V);
+                a3 = 1.0+exp(0.311*(V+79.23));
+                alpha_j = (a1-a2)*(V+37.78)/a3;
+                a2 = 1.0+exp(-0.1378*(V+40.14));
+                beta_j = 0.1212*exp(-0.01052*V)/a2;
+        } else {
+                alpha_h = 0.0;
+                beta_h = 1.0/(0.13*(1.0+exp((V+10.66)/(-11.1))));
+                alpha_j = 0.0;
+                a1 = 1.0+exp(-0.1*(V+32.0));
+                beta_j = 0.3*exp(-2.535e-7*V)/a1;
+        }
 #else
-	// A slightly modified, continuous implementation
-	alpha_h = 0.135*exp((80+V)/-6.8);
+        // A slightly modified, continuous implementation
+        alpha_h = 0.135*exp((80+V)/-6.8);
 
-	if (V<-38.73809636838782) {
-	  // curves do not cross at -40mV, but close
-	  beta_h =3.56*exp(0.079*V)+310000*exp(0.35*V);
-	} else {
-	  beta_h = 1/(0.13*(1+exp((V+10.66)/-11.1)));
-	}
+        if (V<-38.73809636838782) {
+          // curves do not cross at -40mV, but close
+          beta_h =3.56*exp(0.079*V)+310000*exp(0.35*V);
+        } else {
+          beta_h = 1/(0.13*(1+exp((V+10.66)/-11.1)));
+        }
 
-	if (V<-37.78) {
-	  a1 = -127140*exp(0.2444*V);
-	  a2 = 3.474E-5*exp(-0.04391*V);
-	  a3 = 1.0+exp(0.311*(V+79.23));
-	  alpha_j = (a1-a2)*(V+37.78)/a3;
-	} else {
-	  alpha_j=0;
-	}
+        if (V<-37.78) {
+          a1 = -127140*exp(0.2444*V);
+          a2 = 3.474E-5*exp(-0.04391*V);
+          a3 = 1.0+exp(0.311*(V+79.23));
+          alpha_j = (a1-a2)*(V+37.78)/a3;
+        } else {
+          alpha_j=0;
+        }
 
-	if (V<-39.82600037702883) {
-	  // curves do not cross at -40mV, but close
-	  beta_j = 0.1212*exp(-0.01052*V)/(1.0+exp(-0.1378*(V+40.14)));
-	} else {
-	  beta_j = 0.3*exp(-2.535E-7*V)/(1+exp(-0.1*(V+32)));
-	}
+        if (V<-39.82600037702883) {
+          // curves do not cross at -40mV, but close
+          beta_j = 0.1212*exp(-0.01052*V)/(1.0+exp(-0.1378*(V+40.14)));
+        } else {
+          beta_j = 0.3*exp(-2.535E-7*V)/(1+exp(-0.1*(V+32)));
+        }
 #endif
 
-	dhNa = alpha_h*(1.0-hNa)-beta_h*hNa;	
-	djNa = alpha_j*(1.0-jNa)-beta_j*jNa;
+        dhNa = alpha_h*(1.0-hNa)-beta_h*hNa;
+        djNa = alpha_j*(1.0-jNa)-beta_j*jNa;
+
 
 	C1H_to_C2H = T_Const_HERG*A0_HERG*exp(B0_HERG*V);
 	C2H_to_C1H = T_Const_HERG*A1_HERG*exp(B1_HERG*V);
@@ -754,11 +826,47 @@ void fcn(const double time,double state[N],double Fstate[N],double current[Ncur]
 	tau_xKs = 1.0/(a1+a2);
 	dxKs = (xKs_inf-xKs)/tau_xKs;
 
-	//-------COMPUTE INTRACELLULAR CALCIUM FLUXES Jup------------------------------
+        //-------COMPUTE CAMKII STATE PARAMETERS---------------------------------------
 
-	fb = pow(Cai/Kfb,Nfb);
-	rb = pow(CaNSR/Krb,Nrb);
-	Jup = KSR*(vmaxf*fb - vmaxr*rb)/(1.0 + fb + rb);
+        a1 = (1.e+12)*Cai*Cai*Cai*Cai;
+        a2 = (1.e+6)*CMDNtot*a1/(a1 + DupontKD);
+        a3 = CytCaMKII_I*Act_I + CytCaMKII_B*Act_B + CytCaMKII_P*Act_P + CytCaMKII_T*Act_T + CytCaMKII_A*Act_A + CytCaMKII_C*Act_C + CytCaMKII_U*Act_U;
+        a4 = k_auto*(a3*a3)/(a3*a3 + DupontKT*DupontKT);
+
+        U_to_I = CytPP2A*VmaxPP2A/(CaMKII_tot*CytCaMKII_U + KmPP2A);
+        dCytCaMKII_I = B_to_I*CytCaMKII_B - I_to_B*a2*CytCaMKII_I + U_to_I*CytCaMKII_U - I_to_U*CytCaMKII_I;
+
+        // B_to_P = a3*a4*Act_B;
+        //This change was made on Oct 23, 2008 to reflect the equation used in the new, minimized model in Matlab
+        B_to_P = 2*a3*a4*Act_B;
+        P_to_B = CytPP1*VmaxPP1/(CaMKII_tot*CytCaMKII_P + KmPP1);
+        dCytCaMKII_B = I_to_B*a2*CytCaMKII_I - B_to_I*CytCaMKII_B - B_to_P*CytCaMKII_B + P_to_B*CytCaMKII_P;
+
+        dCytCaMKII_P = B_to_P*CytCaMKII_B - P_to_T*CytCaMKII_P + T_to_P*a1*CytCaMKII_T - P_to_B*CytCaMKII_P;
+
+        dCytCaMKII_T = P_to_T*CytCaMKII_P - T_to_P*a1*CytCaMKII_T - T_to_A*CytCaMKII_T + A_to_T*((1.e+6)*CMDNtot-a2)*CytCaMKII_A;
+
+        C_to_A = CytPP2A*VmaxPP2A/(CaMKII_tot*CytCaMKII_C + KmPP2A);
+        dCytCaMKII_A = T_to_A*CytCaMKII_T - A_to_T*((1.e+6)*CMDNtot-a2)*CytCaMKII_A -A_to_C*CytCaMKII_A + C_to_A*CytCaMKII_C;
+
+        C_to_U = CytPP1*VmaxPP1/(CaMKII_tot*CytCaMKII_C + KmPP1);
+        dCytCaMKII_C = A_to_C*CytCaMKII_A - C_to_A*CytCaMKII_C - C_to_U*CytCaMKII_C;
+
+        AvgCaMKII_Act = a3;
+
+        //-------COMPUTE PLB STATE-----------------------------------------------------
+
+        dFracPLB_P = VmaxCaMKII_PLB*CaMKII_tot*AvgCaMKII_Act*(1.0 - FracPLB_P)/(PLB_tot*(1.0-FracPLB_P) + KmCaMKII_PLB) - VmaxPP1_PLB*CytPP1*FracPLB_P/(PLB_tot*FracPLB_P + KmPP1_PLB);
+
+        //-------COMPUTE INTRACELLULAR CALCIUM FLUXES Jup------------------------------
+
+        fb = pow(Cai/Kfb,Nfb);
+        rb = pow(CaNSR/Krb,Nrb);
+        fb_P = pow(Cai/Kfb_P,Nfb);
+        rb_P = pow(CaNSR/Krb_P,Nrb);
+        //Jup = KSR*(vmaxf*fb - vmaxr*rb)/(1.0 + fb + rb);
+        Jup = 0.25*((1.0 - FracPLB_P)*(KSR*(vmaxf*fb - vmaxr*rb)/(1.0 + fb + rb)) + FracPLB_P*(KSR*(vmaxf*fb_P - vmaxr*rb_P)/(1.0 + fb_P + rb_P))) + 0.75*((KSR*(vmaxf*fb_P - vmaxr*rb_P)/(1.0 + fb_P + rb_P))) ;
+	//unbound SERCA behaves like phosphorylated SERCA. Assume 25% is bound, 75% is unbound
 
 	//-------COMPUTE TROPONIN FRACTION DERIVATIVES---------------------------------
 	//-------COMPUTE Jtrpn and BUFFER SCALE FACTORS--------------------------------
@@ -1006,9 +1114,9 @@ void fcn(const double time,double state[N],double Fstate[N],double current[Ncur]
 	//------MOVE LOCAL VARIABLES TO DERIVATIVE AND CURRENT ARRAYS------------------
 
 	Fstate[index_V] = dV;
-	Fstate[index_mNa] = dmNa;
-	Fstate[index_hNa] = dhNa;
-	Fstate[index_jNa] = djNa;
+        Fstate[index_mNa] = dmNa;
+        Fstate[index_hNa] = dhNa;
+        Fstate[index_jNa] = djNa;
 	Fstate[index_Nai] = dNai;
 	Fstate[index_Ki] = dKi;
 	Fstate[index_Cai] = dCai;
@@ -1042,6 +1150,15 @@ void fcn(const double time,double state[N],double Fstate[N],double current[Ncur]
 	Fstate[index_C3Herg] = dC3Herg;
 	Fstate[index_OHerg] = dOHerg;
 	Fstate[index_IHerg] = -dC1Herg-dC2Herg-dC3Herg-dOHerg;
+        Fstate[index_CytCaMKII_I] = dCytCaMKII_I;
+        Fstate[index_CytCaMKII_B] = dCytCaMKII_B;
+        Fstate[index_CytCaMKII_P] = dCytCaMKII_P;
+        Fstate[index_CytCaMKII_T] = dCytCaMKII_T;
+        Fstate[index_CytCaMKII_A] = dCytCaMKII_A;
+        Fstate[index_CytCaMKII_C] = dCytCaMKII_C;
+        Fstate[index_CytCaMKII_U] = -dCytCaMKII_I - dCytCaMKII_B - dCytCaMKII_P - dCytCaMKII_T - dCytCaMKII_A - dCytCaMKII_C;
+        Fstate[index_FracPLB_P] = dFracPLB_P;
+
 
 	if (keepc) {
 		current[index_INa] = INa;
