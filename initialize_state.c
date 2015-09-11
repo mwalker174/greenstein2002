@@ -26,6 +26,8 @@ void initialize_state(double state[N],
 		      double FRU_states[NFRU_sim_max][Nstates_FRU],
 		      int LType_state[NFRU_sim_max][Nclefts_FRU][Nindepstates_LType],
 		      int RyR_state[NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],
+		      int CaMKII_state[NFRU_sim_max][Nclefts_FRU][Nmon_per_holo], 
+		      int LCCPhosph_state[NFRU_sim_max][Nclefts_FRU],
 		      int Ito2_state[NFRU_sim_max][Nclefts_FRU],
 		      unsigned long mt[NFRU_sim_max][mtN+1],int mti[NFRU_sim_max])
 {
@@ -41,7 +43,7 @@ void initialize_state(double state[N],
 	rewind_FRU=min(NFRU_sim,rewind_FRU_max);
 
 	if (ic_file_flag) {
-	  int RyR_NFRU,FRU_NFRU,LCh_NFRU,Ito2_NFRU;
+	  int RyR_NFRU,FRU_NFRU,LCh_NFRU,CaMKII_NFRU,LCCPhosph_NFRU,Ito2_NFRU;
 	  
 	  // if initial conditions are provided in a file, open the 
 	  // file and load the data
@@ -66,6 +68,26 @@ void initialize_state(double state[N],
 	  }
 	  fclose(ic_file);
 	  
+	  sprintf(filepath,"%s/%s",ic_dir,ic_CaMKII_file);
+	  if((ic_file=fopen(filepath,"rb"))==NULL){
+		fprintf(stderr,"Cannot open file '%s'!\n",filepath);
+		abort();
+	  }
+	  CaMKII_NFRU=read_next_int(ic_file);
+	  printf("NFRU in CaMKII file =%d\n",CaMKII_NFRU);
+	  for(iFRU=0;iFRU<NFRU_sim;iFRU++){
+		for(icleft=0;icleft<Nclefts_FRU;icleft++){
+			for(k=0;k<Nmon_per_holo;k++){
+				CaMKII_state[iFRU][icleft][k]=read_next_int(ic_file);
+			}
+		}
+		if (((iFRU+1)%rewind_FRU)==0) {
+			rewind(ic_file);
+			CaMKII_NFRU=read_next_int(ic_file);
+		}
+	  }
+	  fclose(ic_file);
+	  
 	  sprintf(filepath,"%s/%s",ic_dir,ic_LCh_file);
 	  if ((ic_file=fopen(filepath,"rb"))==NULL) {
 	    fprintf(stderr,"Cannot open file '%s'!\n",filepath);
@@ -78,6 +100,24 @@ void initialize_state(double state[N],
 	      for(k=0;k<Nindepstates_LType;k++) {
 		LType_state[iFRU][icleft][k]=read_next_int(ic_file);
 	      }
+	    }
+	    if (((iFRU+1)%rewind_FRU)==0) {
+	      rewind(ic_file);
+	      RyR_NFRU=read_next_int(ic_file);
+	    }
+	  }
+	  fclose(ic_file);
+
+	  sprintf(filepath,"%s/%s",ic_dir,ic_LCCPhosph_file);
+	  if ((ic_file=fopen(filepath,"rb"))==NULL) {
+	    fprintf(stderr,"Cannot open file '%s'!\n",filepath);
+	    abort();
+	  }
+	  LCCPhosph_NFRU=read_next_int(ic_file);
+	  printf("NFRU in LCCPhosph file =%d\n",LCCPhosph_NFRU);
+	  for(iFRU=0;iFRU<NFRU_sim;iFRU++){
+	    for(icleft=0;icleft<Nclefts_FRU;icleft++){
+	      LCCPhosph_state[iFRU][icleft]=read_next_int(ic_file);
 	    }
 	    if (((iFRU+1)%rewind_FRU)==0) {
 	      rewind(ic_file);
@@ -209,6 +249,10 @@ void initialize_state(double state[N],
 				for(k = 0;k<NRyRs_per_cleft;k++) {
 					RyR_state[iFRU][icleft][k] = 1;
 				}
+				for(k=0; k<Nmon_per_holo;k++){
+					CaMKII_state[iFRU][icleft][k]=1;
+				}
+				LCCPhosph_state[iFRU][icleft] = 1;
 				Ito2_state[iFRU][icleft] = 2;
 			}
 			FRU_states[iFRU][index_frustates_CaJSR] = 0.7;   //  local JSR  
@@ -271,7 +315,7 @@ void initialize_state(double state[N],
 	// Compute weighting factor for error scaling calculation in RK4 algorithm.
 	// These are approx. 1/(max_abs_value) for each state.
 
-	errweight[index_V] = 0; //1.e-2; // not independent
+	errweight[index_V] = 1.e-2; //0; //1.e-2; // not independent
 	errweight[index_mNa] = 1.0;
 	errweight[index_hNa] = 1.0;
 	errweight[index_jNa] = 1.0;

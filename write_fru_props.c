@@ -32,6 +32,7 @@ void write_fru_props(FILE *filee[],FILE *file_avg[],FILE *file_avg_all,
 		     const double CaNSR,
 		     double FRU_states[NFRU_sim_max][Nstates_FRU],
 		     int LType_state[NFRU_sim_max][Nclefts_FRU][Nindepstates_LType],
+		     int LCCPhosph_state[NFRU_sim_max][Nclefts_FRU],
 		     int RyR_state[NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],
 		     int Ito2_state[NFRU_sim_max][Nclefts_FRU])
 {
@@ -87,13 +88,19 @@ void write_fru_props(FILE *filee[],FILE *file_avg[],FILE *file_avg_all,
       CaSS_avg1 += CaSS[jcleft];
       CaSS_avgALL += CaSS[jcleft];
       JLType[jcleft] = 0.0;
-      if ( ((LType_state[j][index_LCC_states][jcleft]==O1_LType)||(LType_state[j][index_LCC_states][jcleft]==O2_LType))
-	   && LType_state[j][index_LCC_Vinact][jcleft]==Oy_LType) {  
-	JLType[jcleft] = PCa*4.0*VFsq_over_RT*(CaSS[jcleft]*exp(2.0*VF_over_RT)-Cao*0.341)/(exp(2.0*VF_over_RT)-1.0)/(-2.0*Vmyo*Faraday*1000.0);
+      	if ( ((LType_state[j][index_LCC_states][jcleft]==O1_LType)||(LType_state[j][index_LCC_states][jcleft]==O2_LType))
+	   && LType_state[j][index_LCC_Vinact][jcleft]==Oy_LType) 
+	{
+	  if(LCCPhosph_state[j][jcleft]==6)
+	  {
+	  JLType[jcleft] = PCa2*4.0*VFsq_over_RT*(CaSS[jcleft]*exp(2.0*VF_over_RT)-Cao*0.341)/(exp(2.0*VF_over_RT)-1.0)/(-2.0*Vmyo*Faraday*1000.0);
+	  } else {
+	  JLType[jcleft] = PCa1*4.0*VFsq_over_RT*(CaSS[jcleft]*exp(2.0*VF_over_RT)-Cao*0.341)/(exp(2.0*VF_over_RT)-1.0)/(-2.0*Vmyo*Faraday*1000.0);
+	  }
 	//     .				/(exp(2.0*VF_over_RT)-1.0)  //  /(-2.0*Vmyo*Faraday*1000.0)
-	JLType_tot1 += JLType[jcleft];
-	JLType_totALL += JLType[jcleft];
-      }
+	  JLType_tot1 += JLType[jcleft];
+	  JLType_totALL += JLType[jcleft];
+        }
       Ito2[jcleft] = 0.0;
       if (Ito2_state[j][jcleft]==O_Ito2) {
 	Ito2[jcleft] = PCl*VFsq_over_RT*(Cli*exp(-VF_over_RT)-Clo)/(exp(-VF_over_RT) - 1.0);

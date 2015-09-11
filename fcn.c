@@ -482,39 +482,39 @@ void fcn(const double time,double state[N],double Fstate[N],double current[Ncur]
 	  }
 	}
 	//------Voltage clamp mode with a prepulse--------------------
-       if (vppclamp_flag) {
-          // Voltage clamp ramps have been commented out below
 
-          //time_vppclamp_on = vppclamp_shift;
-         //Change made on Mar 12, 2008
-          time_vppclamp_on = floor((time-vppclamp_shift)/vppclamp_period)*vppclamp_period;
-          time_vppclamp_ppoff = time_vppclamp_on + vppclamp_ppduration;
-          time_vppclamp_off = time_vppclamp_on + vppclamp_duration+ vppclamp_ppduration;
-          //commented out on Mar 12, 2008
-          //if ((time >= time_vppclamp_on)&&(time_vppclamp_on>=0.0)&&(time < time_vppclamp_ppoff)) {
+	if (vppclamp_flag) {
+	  // Voltage clamp ramps have been commented out below
 
-            if (((time - vppclamp_shift) >= time_vppclamp_on) && (time_vppclamp_on >= 0.0) && ((time - vppclamp_shift) < time_vppclamp_ppoff)){
-            V = vppclamp_ppset;
-          } else {
+	  //time_vppclamp_on = vppclamp_shift;
+	 //Change made on Mar 12, 2008
+	  time_vppclamp_on = floor((time-vppclamp_shift)/vppclamp_period)*vppclamp_period; 
+	  time_vppclamp_ppoff = time_vppclamp_on + vppclamp_ppduration;
+	  time_vppclamp_off = time_vppclamp_on + vppclamp_duration+ vppclamp_ppduration;
+	  //commented out on Mar 12, 2008
+	  //if ((time >= time_vppclamp_on)&&(time_vppclamp_on>=0.0)&&(time < time_vppclamp_ppoff)) {
 
-            //commented out on Mar 12, 2008
-            //if ((time >= time_vppclamp_ppoff)&&(time_vppclamp_on>=0.0)&&(time < time_vppclamp_off)) {
+	    if (((time - vppclamp_shift) >= time_vppclamp_on) && (time_vppclamp_on >= 0.0) && ((time - vppclamp_shift) < time_vppclamp_ppoff)){
+	    V = vppclamp_ppset;
+	  } else {
 
-              if (((time-vppclamp_shift) >= time_vppclamp_ppoff)&&(time_vppclamp_on>=0.0)&&((time-vppclamp_shift) < time_vppclamp_off)){
-              V = vppclamp_set;
-            } else {
+	    //commented out on Mar 12, 2008 
+	    //if ((time >= time_vppclamp_ppoff)&&(time_vppclamp_on>=0.0)&&(time < time_vppclamp_off)) {
 
-              //commented out on Mar 12, 2008
-              //if ((time<time_vppclamp_on)||(time_vppclamp_on<0.0)) {
-              //if ((time<time_vppclamp_on)||(time_vppclamp_on<0.0)||(time>=time_vppclamp_off)) {
+	      if (((time-vppclamp_shift) >= time_vppclamp_ppoff)&&(time_vppclamp_on>=0.0)&&((time-vppclamp_shift) < time_vppclamp_off)){
+	      V = vppclamp_set;
+	    } else {
 
-               if (((time-vppclamp_shift)<time_vppclamp_on)||(time_vppclamp_on<0.0)|| ((time-vppclamp_shift) >= time_vppclamp_off)){
-                V = vppclamp_hold;
-              }
-            }
-          }
-        }
- 
+	      //commented out on Mar 12, 2008 
+	      //if ((time<time_vppclamp_on)||(time_vppclamp_on<0.0)) {
+	      //if ((time<time_vppclamp_on)||(time_vppclamp_on<0.0)||(time>=time_vppclamp_off)) {
+
+	       if (((time-vppclamp_shift)<time_vppclamp_on)||(time_vppclamp_on<0.0)|| ((time-vppclamp_shift) >= time_vppclamp_off)){ 
+		V = vppclamp_hold;
+	      }
+	    }
+	  }
+	}
 
 	//-------voltage clamp for I-V relationship studies-------------------------------------------
 
@@ -822,23 +822,23 @@ void fcn(const double time,double state[N],double Fstate[N],double current[Ncur]
 		}
 	}
 
-        if (vppclamp_flag) {
-        //      time_vppclamp_off = vppclamp_duration+vppclamp_ppduration+vppclamp_shift;
-        //Change made on Mar 12, 2008
-                time_vppclamp_off = time_vppclamp_on + vppclamp_ppduration + vppclamp_shift;
+	if (vppclamp_flag) {
+	//	time_vppclamp_off = vppclamp_duration+vppclamp_ppduration+vppclamp_shift;
+	//Change made on Mar 12, 2008
+		time_vppclamp_off = time_vppclamp_on + vppclamp_ppduration + vppclamp_shift;
 
-                if (time<=time_vppclamp_off) {
-                        dV = 0.0;
-                        state[index_V]=V;
-                        Itot = a1+a2+a3;
-                } else {
-                        dV = 0.0;
-                        state[index_V]=V;
-                        Itot = a1+a2+a3;
-                        //Itot = a1+a2+a3+Istim;
-                        //dV = -Itot;
-                }
-        }
+		if (time<=time_vppclamp_off) {
+			dV = 0.0;
+			state[index_V]=V;
+			Itot = a1+a2+a3;
+		} else {
+			dV = 0.0;
+			state[index_V]=V;
+			Itot = a1+a2+a3;
+			//Itot = a1+a2+a3+Istim;
+			//dV = -Itot;
+		}
+	}
 
 
 	//-------COMPUTE DERIVATIVES OF Kv4.3 CHANNEL STATES---------

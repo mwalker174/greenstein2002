@@ -16,6 +16,8 @@ int NFRU_local;
 double FRU_states_local[MAX_LOCAL_NFRU][Nstates_FRU];
 int LType_state_local[MAX_LOCAL_NFRU][Nclefts_FRU][Nindepstates_LType];
 int RyR_state_local[MAX_LOCAL_NFRU][Nclefts_FRU][NRyRs_per_cleft];
+int CaMKII_state_local[MAX_LOCAL_NFRU][Nclefts_FRU][Nmon_per_holo];
+int LCCPhosph_state_local[MAX_LOCAL_NFRU][Nclefts_FRU];
 int Ito2_state_local[MAX_LOCAL_NFRU][Nclefts_FRU];
 unsigned long mt_local[MAX_LOCAL_NFRU][mtN];
 int mti_local[MAX_LOCAL_NFRU];
@@ -23,6 +25,8 @@ int mti_local[MAX_LOCAL_NFRU];
 double FRU_states_local_hold[MAX_LOCAL_NFRU][Nstates_FRU];
 int LType_state_local_hold[MAX_LOCAL_NFRU][Nclefts_FRU][Nindepstates_LType];
 int RyR_state_local_hold[MAX_LOCAL_NFRU][Nclefts_FRU][NRyRs_per_cleft];
+int CaMKII_state_local_hold[MAX_LOCAL_NFRU][Nclefts_FRU][Nmon_per_holo];
+int LCCPhosph_state_local_hold[MAX_LOCAL_NFRU][Nclefts_FRU];
 int Ito2_state_local_hold[MAX_LOCAL_NFRU][Nclefts_FRU];
 unsigned long mt_local_hold[MAX_LOCAL_NFRU][mtN];
 int mti_local_hold[MAX_LOCAL_NFRU];
@@ -61,6 +65,10 @@ void parallel_init_FRU()
     MPI_Irecv(&LType_state_local[i][0][0],Nclefts_FRU*Nindepstates_LType,MPI_INT,source,tag,MPI_COMM_WORLD,&request[reqno]);
     tag++; reqno++;
     MPI_Irecv(&RyR_state_local[i][0][0],Nclefts_FRU*NRyRs_per_cleft,MPI_INT,source,tag,MPI_COMM_WORLD,&request[reqno]);
+    tag++; reqno++;
+    MPI_Irecv(&CaMKII_state_local[i][0][0],Nclefts_FRU*Nmon_per_holo,MPI_INT,source,tag,MPI_COMM_WORLD,&request[reqno]);
+    tag++; reqno++;
+    MPI_Irecv(&LCCPhosph_state_local[i][0],Nclefts_FRU,MPI_INT,source,tag,MPI_COMM_WORLD,&request[reqno]);
     tag++; reqno++;
     MPI_Irecv(&Ito2_state_local[i][0],Nclefts_FRU,MPI_INT,source,tag,MPI_COMM_WORLD,&request[reqno]);
     tag++; reqno++;
@@ -109,6 +117,12 @@ void parallel_send_FRU(void)
     MPI_Isend(&RyR_state_local[i][0][0],Nclefts_FRU*NRyRs_per_cleft,MPI_INT,dest,tag,MPI_COMM_WORLD,&request[reqno]);
     reqno++;
     tag++;
+    MPI_Isend(&CaMKII_state_local[i][0][0],Nclefts_FRU*Nmon_per_holo,MPI_INT,dest,tag,MPI_COMM_WORLD,&request[reqno]);
+    reqno++;
+    tag++;
+    MPI_Isend(&LCCPhosph_state_local[i][0],Nclefts_FRU,MPI_INT,dest,tag,MPI_COMM_WORLD,&request[reqno]);
+    reqno++;
+    tag++;
     MPI_Isend(&Ito2_state_local[i][0],Nclefts_FRU,MPI_INT,dest,tag,MPI_COMM_WORLD,&request[reqno]);
     reqno++;
     tag++;
@@ -142,6 +156,10 @@ void parallel_resume_state(void)
       for (i = 0; i < NRyRs_per_cleft; i++) {
 	RyR_state_local[iFRU][icleft][i] = RyR_state_local_hold[iFRU][icleft][i];
       }
+      for(i=0; i<Nmon_per_holo; i++){
+	CaMKII_state_local[iFRU][icleft][i] = CaMKII_state_local_hold[iFRU][icleft][i];
+      }
+	LCCPhosph_state_local[iFRU][icleft] = LCCPhosph_state_local_hold[iFRU][icleft];
       LType_state_local[iFRU][icleft][index_LCC_states] = LType_state_local_hold[iFRU][icleft][index_LCC_states];
       LType_state_local[iFRU][icleft][index_LCC_Vinact] = LType_state_local_hold[iFRU][icleft][index_LCC_Vinact];
       Ito2_state_local[iFRU][icleft] = Ito2_state_local_hold[iFRU][icleft];
@@ -157,6 +175,8 @@ void parallel_resume_state(void)
   // is this faster ? does not seem to be...
   memcpy(FRU_states_local, FRU_states_local_hold, sizeof(double) * NFRU_local * Nstates_FRU);
   memcpy(RyR_state_local, RyR_state_local_hold, sizeof(int) * NFRU_local * Nclefts_FRU * NRyRs_per_cleft);
+  memcpy(CaMKII_state_local, CaMKII_state_local_hold, sizeof(int) * NFRU_local * Nclefts_FRU * Nmon_per_holo);
+  memcpy(LCCPhosph_state_local, LCCPhosph_state_local_hold, sizeof(int) * NFRU_local * Nclefts_FRU);
   memcpy(LType_state_local, LType_state_local_hold, sizeof(int) * NFRU_local * Nclefts_FRU * 2);
   memcpy(Ito2_state_local, Ito2_state_local_hold, sizeof(int) * NFRU_local * Nclefts_FRU);
   memcpy(mti_local, mti_local_hold, sizeof(int) * NFRU_local);
@@ -179,6 +199,10 @@ void parallel_save_state(void)
       for (i = 0; i < NRyRs_per_cleft; i++) {
 	RyR_state_local_hold[iFRU][icleft][i] = RyR_state_local[iFRU][icleft][i];
       }
+      for (i=0; i<Nmon_per_holo; i++){
+	CaMKII_state_local_hold[iFRU][icleft][i] = CaMKII_state_local[iFRU][icleft][i];
+      }
+	LCCPhosph_state_local_hold[iFRU][icleft] = LCCPhosph_state_local[iFRU][icleft];
       LType_state_local_hold[iFRU][icleft][index_LCC_states] = LType_state_local[iFRU][icleft][index_LCC_states];
       LType_state_local_hold[iFRU][icleft][index_LCC_Vinact] = LType_state_local[iFRU][icleft][index_LCC_Vinact];
       Ito2_state_local_hold[iFRU][icleft] = Ito2_state_local[iFRU][icleft];
@@ -193,6 +217,8 @@ void parallel_save_state(void)
   // is this faster ? does not seem to be...
   memcpy(FRU_states_local_hold, FRU_states_local, sizeof(double) * NFRU_local * Nstates_FRU);
   memcpy(RyR_state_local_hold, RyR_state_local, sizeof(int) * NFRU_local * Nclefts_FRU * NRyRs_per_cleft);
+  memcpy(CaMKII_state_local_hold, CaMKII_state_local, sizeof(int) * NFRU_local * Nclefts_FRU * Nmon_per_holo);
+  memcpy(LCCPhosph_state_local_hold, LCCPhosph_state_local, sizeof(int) * NFRU_local * Nclefts_FRU);
   memcpy(LType_state_local_hold, LType_state_local, sizeof(int) * NFRU_local * Nclefts_FRU * 2);
   memcpy(Ito2_state_local_hold, Ito2_state_local, sizeof(int) * NFRU_local * Nclefts_FRU);
   memcpy(mti_local_hold, mti_local, sizeof(int) * NFRU_local);
@@ -229,12 +255,14 @@ void parallel_compute_simfru(int procs,int my_rank)
 		 FRUdep_statesf_local,
 		 &LType_state_local[i][0][0],
 		 &RyR_state_local[i][0][0],
+		 &CaMKII_state_local[i][0][0],
+		 &LCCPhosph_state_local[i][0],
 		 &Ito2_state_local[i][0],
 		 &FRU_states_local[i][0],
 		 &mti_local[i],
 		 &mt_local[i][0]);
   }
-  calc_fru_flux_local(NFRU_local,LType_state_local,Ito2_state_local,
+  calc_fru_flux_local(NFRU_local,LType_state_local,LCCPhosph_state_local,Ito2_state_local,
 		      FRU_states_local,FRUdep_statesf_local,num_stat);
 
 #if USE_MPI
@@ -246,19 +274,19 @@ void parallel_compute_simfru(int procs,int my_rank)
 #if USE_MPI
 void parallel_calc_fru_avg(int procs,int my_rank)
 {
-  double num_stat[11];
-  double total_num[11];
+  double num_stat[18];
+  double total_num[18];
 
   if (NFRU_local>0) {
-    calc_fru_avg_local(num_stat,NFRU_local,FRU_states_local,LType_state_local,RyR_state_local,Ito2_state_local);
+    calc_fru_avg_local(num_stat,NFRU_local,FRU_states_local,LType_state_local,RyR_state_local,CaMKII_state_local,LCCPhosph_state_local,Ito2_state_local);
   } else {
     int i;
     
-    for(i=0;i<11;i++)
+    for(i=0;i<18;i++)
       num_stat[i]=0;
   }
 
-  MPI_Reduce(num_stat,total_num,11,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+  MPI_Reduce(num_stat,total_num,18,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
 }
 #endif
 
@@ -277,7 +305,7 @@ void parallel_calc_fru_flux(int procs,int my_rank)
 
   DepFlag = 1;
   if (NFRU_local>0) {
-    calc_fru_flux_local(NFRU_local,LType_state_local,Ito2_state_local,FRU_states_local,
+    calc_fru_flux_local(NFRU_local,LType_state_local,LCCPhosph_state_local,Ito2_state_local,FRU_states_local,
 			FRUdep_states_local,num_stat);
   } else {
     int i;

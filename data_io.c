@@ -55,9 +55,9 @@ FILE *open_otherstates(const int filenumber)
 	}
 	fprintf(filee,
 		"%s %s %s %s %s %s %s %s %s %s " 
-		"%s %s %s \n",
+		"%s %s %s %s %s %s %s %s %s %s\n",
 		"Time","CaSSavg","CaJSRavg","JRyRtot","PRyR_open","PRyR_ready","PNorm_mode","PnotVinact","PLType_open","CaToT2",
-		"PIto2_open","CaJSRtot","CaSStot");
+		"PIto2_open","CaJSRtot","CaSStot","CaMKII_Act","LCCP0","LCCP1","LCCP2","LCCP3","CaMKII_Phosph","Mode2Open");
 
 	return filee;
 }
@@ -199,6 +199,8 @@ void restart_data(const int filenumber,
 		  double FRU_states[NFRU_sim_max][Nstates_FRU],
 		  int LType_state[NFRU_sim_max][Nclefts_FRU][Nindepstates_LType],
 		  int RyR_state[NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],
+		  int CaMKII_state[NFRU_sim_max][Nclefts_FRU][Nmon_per_holo],
+		  int LCCPhosph_state[NFRU_sim_max][Nclefts_FRU],
 		  int Ito2_state[NFRU_sim_max][Nclefts_FRU],
 		  unsigned long mt[NFRU_sim_max][mtN+1],int mti[NFRU_sim_max])
 {
@@ -206,6 +208,8 @@ void restart_data(const int filenumber,
 	char filename[256];
 	FILE *states_file;
 	FILE *RyR_file;
+	FILE *CaMKII_file;
+	FILE *LCCPhosph_file;
 	FILE *LCh_file;
 	FILE *FRU_file;
 	FILE *Ito2_file;
@@ -234,6 +238,16 @@ void restart_data(const int filenumber,
 		fprintf(stderr,"Problem opening file %s\n",filename);
 	}
 
+	sprintf(filename,"%sr_CaMKII.%d.txt",output_dir,filenumber);
+	if ((CaMKII_file=fopen(filename,"w+"))==NULL){
+		fprintf(stderr,"Problem opening file %s\n",filename);
+	}
+
+	sprintf(filename,"%sr_LCCPhosph.%d.txt",output_dir,filenumber);
+	if ((LCCPhosph_file=fopen(filename,"w+"))==NULL){
+		fprintf(stderr,"Problem opening file %s\n",filename);
+	}
+
 	sprintf(filename,"%sr_Ito2.%d.txt",output_dir,filenumber);
 	if ((Ito2_file=fopen(filename,"w+"))==NULL) {
 		fprintf(stderr,"Problem opening file %s\n",filename);
@@ -243,6 +257,8 @@ void restart_data(const int filenumber,
 	// except states
 	fprintf(FRU_file,"%d\n",NFRU_sim);
 	fprintf(RyR_file,"%d\n",NFRU_sim);
+	fprintf(CaMKII_file, "%d\n",NFRU_sim);
+	fprintf(LCCPhosph_file, "%d\n",NFRU_sim);
 	fprintf(LCh_file,"%d\n",NFRU_sim);
 	fprintf(Ito2_file,"%d\n",NFRU_sim);
 
@@ -257,6 +273,11 @@ void restart_data(const int filenumber,
 	      fprintf(RyR_file,"%d ",RyR_state[iFRU][icleft][k]);
 	    }
 	    fprintf(RyR_file,"\n");
+	    for(k=0;k<Nmon_per_holo;k++){
+	      fprintf(CaMKII_file,"%d ",CaMKII_state[iFRU][icleft][k]);
+	    }
+	    fprintf(CaMKII_file,"\n");
+	    fprintf(LCCPhosph_file,"%d\n",LCCPhosph_state[iFRU][icleft]);
 	    fprintf(Ito2_file,"%d\n",Ito2_state[iFRU][icleft]);
 	  } 
 	}
@@ -264,6 +285,8 @@ void restart_data(const int filenumber,
 	fclose(FRU_file);
 	fclose(states_file);
 	fclose(RyR_file);
+	fclose(CaMKII_file);
+	fclose(LCCPhosph_file);
 	fclose(LCh_file);
 	fclose(Ito2_file);
 

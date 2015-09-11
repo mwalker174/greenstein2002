@@ -42,8 +42,11 @@ int procs;
 */
 int main(int argc,char **argv)
 {
+printf("started main\n");
 #if USE_MPI
+  printf("about to initialize MPI\n");
   initialize_mpi(&argc,argv,&my_rank,&procs);
+  printf("initialized MPI\n");
 #else
   procs=1;
   my_rank=0;
@@ -55,6 +58,7 @@ int main(int argc,char **argv)
     double state[N];
     double current[Ncur];
     double otherstates[Nother];
+    //double Act_coeff[8];
 
     double time_now, tstep, oldstepsize,iv_time;
     int  filenumber;
@@ -71,6 +75,8 @@ int main(int argc,char **argv)
     double FRU_states[NFRU_sim_max][Nstates_FRU];
     int LType_state[NFRU_sim_max][Nclefts_FRU][Nindepstates_LType];
     int RyR_state[NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft];
+    int CaMKII_state[NFRU_sim_max][Nclefts_FRU][Nmon_per_holo];
+    int LCCPhosph_state[NFRU_sim_max][Nclefts_FRU];
     int Ito2_state[NFRU_sim_max][Nclefts_FRU];
     unsigned long mt[NFRU_sim_max][mtN+1]; /* the array for the state vector  */
     int mti[NFRU_sim_max]; /* mti==mtN+1 means mt[mtN] is not initialized */
@@ -110,7 +116,9 @@ int main(int argc,char **argv)
     }
     
     // step size for integrator
+    //printf("Step max is %d\n", step_max);
     oldstepsize=step_max;
+    //printf("Oldstepsize is %e\n", oldstepsize);
     
     // initial count of resets in filenumber
     filenumber = filenumber0;
@@ -119,13 +127,16 @@ int main(int argc,char **argv)
     initialize_ran(mt,mti);
     
     // Set initial conditions on state variables
-    initialize_state(state,FRU_states,LType_state,RyR_state,Ito2_state,mt,mti);
-    
+    initialize_state(state,FRU_states,LType_state,RyR_state,CaMKII_state,LCCPhosph_state,Ito2_state,mt,mti);
+
+	//initActCoeff(Act_coeff);
+	//fprintf(stdout, "%g", Act_coeff[3]);
 	// Set up MPI system and distribute data to slave processes
-    initialize_mpi_state(FRU_states,LType_state,RyR_state,Ito2_state,mti,mt);
+    initialize_mpi_state(FRU_states,LType_state,RyR_state,CaMKII_state,LCCPhosph_state,Ito2_state,mti,mt);
     
     // open output files
     states_file=open_states(filenumber);
+    //printf("Opened state file \n");
     currents_file=open_currents(filenumber);
     otherstates_file=open_otherstates(filenumber);
     
@@ -154,14 +165,17 @@ int main(int argc,char **argv)
       n_restart = n_restart + 1;
       tstep = time_now + time_step;
       iv_time = iv_time + time_step;
+      //printf("Completed first time step \n");
       
       // Integrate the whole system over 
       // time interval from 'time' to 'tstep'
 #if USE_PD_INTEGRATOR
+      //printf("Before RK4 call, Time now is %e, tstep is %e and old step size is %e", time_now, tstep, oldstepsize); 
       oldstepsize=rk54pd(time_now,tstep,oldstepsize,state,current);
 #else
       oldstepsize=rk4am(time_now,tstep,oldstepsize,state,current);
-#endif 
+#endif
+      //printf("\n Finished first step size"); 
       //	    if (apclamp_flag) state[index_V) = v_at_t;
       
       // Calculate additional output quantities that are algebraically 
@@ -187,19 +201,19 @@ int main(int argc,char **argv)
       if (write_fru_props_flag) {
 		// Write data which define the local events with the release unit 
 		// to the output files only if the flag is set
-		parallel_get_FRUs(FRU_states,LType_state,RyR_state,Ito2_state,mt,mti);
+		parallel_get_FRUs(FRU_states,LType_state,RyR_state,CaMKII_state,LCCPhosph_state,Ito2_state,mt,mti);
 		write_fru_props(&fruprop_file[0],&frupropavg_file[0],frupropavgtot_file,tstep,
 				state[index_V],state[index_Cai],state[index_CaNSR],
-				FRU_states,LType_state,RyR_state,Ito2_state);
+				FRU_states,LType_state,LCCPhosph_state,RyR_state,Ito2_state);
       }
 	    
       if (n_restart >= Ndump) {
 		n_restart=0;
 		      
 		// First collect all states from slave processes
-		parallel_get_FRUs(FRU_states,LType_state,RyR_state,Ito2_state,mt,mti);
+		parallel_get_FRUs(FRU_states,LType_state,RyR_state,CaMKII_state,LCCPhosph_state,Ito2_state,mt,mti);
 		// Then save data
-		restart_data(filenumber,state,FRU_states,LType_state,RyR_state,Ito2_state,mt,mti);
+		restart_data(filenumber,state,FRU_states,LType_state,RyR_state,CaMKII_state,LCCPhosph_state,Ito2_state,mt,mti);
 		filenumber=filenumber+1;
 		
 		// Close output files
@@ -237,15 +251,15 @@ int main(int argc,char **argv)
 		// Initialize random number generator seeds for each sequence
 		initialize_ran(mt,mti);	
 		// Set initial conditions on state variables
-		initialize_state(state,FRU_states,LType_state,RyR_state,Ito2_state,mt,mti);
+		initialize_state(state,FRU_states,LType_state,RyR_state,CaMKII_state,LCCPhosph_state,Ito2_state,mt,mti);
 
 		// Redistribute initialized states to slave processes
-		initialize_mpi_state(FRU_states,LType_state,RyR_state,Ito2_state,mti,mt);	      
+		initialize_mpi_state(FRU_states,LType_state,RyR_state,CaMKII_state,LCCPhosph_state,Ito2_state,mti,mt);	      
       }
       
       // Dynamic change of FRU number, this is probably not practical in MPI implementation
       if (NFRU_sim_high!=NFRU_sim_low) {
-		dynamicFRU(tstep,state,FRU_states,LType_state,RyR_state,Ito2_state,mti,mt,
+		dynamicFRU(tstep,state,FRU_states,LType_state,RyR_state,CaMKII_state,LCCPhosph_state,Ito2_state,mti,mt,
 			otherstates[index_PRyR_Open],otherstates[index_PLType_Open]);
       }
     }

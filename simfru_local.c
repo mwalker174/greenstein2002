@@ -33,7 +33,9 @@ void simfru_local(const double time0,const double timef,
 				  double FRUdep_states0[Nstates_FRUdep],
 				  double FRUdep_statesf[Nstates_FRUdep],
 				  int LType_state[Nclefts_FRU][Nindepstates_LType],
-				  int RyR_state[Nclefts_FRU][NRyRs_per_cleft],
+				  int RyR_state[Nclefts_FRU][NRyRs_per_cleft], 
+				  int CaMKII_state[Nclefts_FRU][Nmon_per_holo],
+				  int LCCPhosph_state[Nclefts_FRU],
 				  int Ito2_state[Nclefts_FRU],
 				  double FRU_states[Nstates_FRU],
 				  int *mti_loc,
@@ -55,6 +57,14 @@ void simfru_local(const double time0,const double timef,
 	double LType_Vinact_exitprob[Nclefts_FRU];
 	double Ito2_exitrate[Nclefts_FRU];
 	double Ito2_exitprob[Nclefts_FRU];
+	double CaMKII_trans_rates[Nclefts_FRU][Nmon_per_holo][4];
+	double CaMKII_trans_probs[Nclefts_FRU][Nmon_per_holo][4];
+	int CaMKII_index[Nclefts_FRU][Nmon_per_holo][4];
+	int CaMKII_length[Nclefts_FRU][Nmon_per_holo];
+	double LCCPhosph_trans_rates[Nclefts_FRU][4];
+	double LCCPhosph_trans_probs[Nclefts_FRU][4];
+	int LCCPhosph_index[Nclefts_FRU][4];
+	int LCCPhosph_length[Nclefts_FRU];
 	double RyR_trans_rates[Nclefts_FRU][NRyRs_per_cleft][4];
 	double RyR_trans_probs[Nclefts_FRU][NRyRs_per_cleft][4];
 	int RyR_index[Nclefts_FRU][NRyRs_per_cleft][4];
@@ -77,6 +87,7 @@ void simfru_local(const double time0,const double timef,
 	int count_cycle=0;
 
 	double LType_open[Nclefts_FRU];
+	double LType_PCa[Nclefts_FRU];
 	int NRyR_open[Nclefts_FRU];
 	double CaSStemp;
 
@@ -100,13 +111,21 @@ void simfru_local(const double time0,const double timef,
 
 	for(icleft = 0;icleft<Nclefts_FRU;icleft++) {
 		// set the indicator variables for channels that are open
-		if ( ((LType_state[icleft][index_LCC_states]==O1_LType)||(LType_state[icleft][index_LCC_states]==O2_LType)) 
+		  if ( ((LType_state[icleft][index_LCC_states]==O1_LType)||(LType_state[icleft][index_LCC_states]==O2_LType)) 
 			&& (LType_state[icleft][index_LCC_Vinact]==Oy_LType))  
-		{
+		  { 
 			LType_open[icleft] = 1.0;
-		} else {
+		  } else {
 			LType_open[icleft] = 0.0;
-		}
+		  }
+
+		// set the indicator variables for mode 2 channels
+		  if (LCCPhosph_state[icleft]==6)
+		  {
+			LType_PCa[icleft] = PCa2;
+		  } else {
+			LType_PCa[icleft] = PCa1;
+		  }
 
 		NRyR_open[icleft]=0;
 		for(i=0;i<NRyRs_per_cleft;i++) {
@@ -128,9 +147,9 @@ void simfru_local(const double time0,const double timef,
 
 		// fru_rates returns the rate of exit from each currently occupied
 		// state into all neighboring states for each channel
-		max_exit_rate=fru_rates_local(LType_state,RyR_state,Ito2_state,FRUdep_states,FRU_states,
+		max_exit_rate=fru_rates_local(LType_state,RyR_state,CaMKII_state,LCCPhosph_state,Ito2_state,FRUdep_states,FRU_states,
 			LType_trans_rates,LType_index,LType_length, LType_Vinact_exitrate,
-			RyR_trans_rates,RyR_index,RyR_length,Ito2_exitrate,mti_loc,mt_loc);
+			RyR_trans_rates,RyR_index,RyR_length,CaMKII_trans_rates,CaMKII_index,CaMKII_length,LCCPhosph_trans_rates,LCCPhosph_index,LCCPhosph_length,Ito2_exitrate,mti_loc,mt_loc);
 
 		time_stepFRU = 0.1/max_exit_rate;
 		// 	time_stepFRU = 0.05/max_exit_rate
@@ -151,7 +170,7 @@ void simfru_local(const double time0,const double timef,
 		}
 
 		// local velocity field for Ca concentrations within the unit
-		fcn_fru(time_FRU,FRU_states1,FRUdep_states,LType_open,NRyR_open,dFRU_states);
+		fcn_fru(time_FRU,FRU_states1,FRUdep_states,LType_open,LType_PCa,NRyR_open,dFRU_states);
 
 		for(i=0;i<Nstates_FRU;i++) { // First intermediate integration step (Trapezoidal Method)
 			k1[i] = time_stepFRU*dFRU_states[i];
@@ -166,7 +185,7 @@ void simfru_local(const double time0,const double timef,
 
 		// event occurs at delta t
 		// local velocity field for Ca concentrations within the unit
-		fcn_fru(time_FRU,y_1,FRUdep_states,LType_open,NRyR_open,dFRU_states);
+		fcn_fru(time_FRU,y_1,FRUdep_states,LType_open,LType_PCa,NRyR_open,dFRU_states);
 
 		for(i=0;i<Nstates_FRU;i++) {	// Second intermediate integration step (Trapezoidal Method)
 			FRU_states[i] = FRU_states[i] + (k1[i]+time_stepFRU*dFRU_states[i])/2.0;
@@ -190,6 +209,21 @@ void simfru_local(const double time0,const double timef,
 				for(i=2;i<RyR_length[icleft][j];i++) {
 					RyR_trans_probs[icleft][j][i] = time_stepFRU*RyR_trans_rates[icleft][j][i];
 				}
+			}
+
+			for(j=0;j<Nmon_per_holo;j++){
+				//There are always at least two possible transitions
+				CaMKII_trans_probs[icleft][j][0] = 1.0 - time_stepFRU*CaMKII_trans_rates[icleft][j][0];
+				CaMKII_trans_probs[icleft][j][1] = time_stepFRU*CaMKII_trans_rates[icleft][j][1];
+				for(i=2;i<CaMKII_length[icleft][j];i++){
+					CaMKII_trans_probs[icleft][j][i] = time_stepFRU*CaMKII_trans_rates[icleft][j][i];
+				}
+			}
+
+			LCCPhosph_trans_probs[icleft][0] = 1.0 - time_stepFRU*LCCPhosph_trans_rates[icleft][0];
+			LCCPhosph_trans_probs[icleft][1] = time_stepFRU*LCCPhosph_trans_rates[icleft][1];
+			for(i=2;i<LCCPhosph_length[icleft];i++){
+				LCCPhosph_trans_probs[icleft][i] = time_stepFRU*LCCPhosph_trans_rates[icleft][i];
 			}
 			Ito2_exitprob[icleft] = 1.0 - time_stepFRU*Ito2_exitrate[icleft];
 		} // for
@@ -241,11 +275,39 @@ void simfru_local(const double time0,const double timef,
 					}
 
 					RyR_state[icleft][i] = RyR_index[icleft][i][count];
+					//THAPSIGARGIN CASE
 					signal1[icleft] = 1;
+					//signal1[icleft] = 0;
 				}
 				//THAPSIGARGIN CASE
-			//	RyR_state[icleft][i] = 1;
+				//RyR_state[icleft][i] = 1;
 			} // for
+
+			for(i=0;i<Nmon_per_holo;i++){
+				Accum_Prob=CaMKII_trans_probs[icleft][i][0];
+				if(unidev[i+2+NRyRs_per_cleft+base_ind]>Accum_Prob){
+					count = 1; //we know that state has been changed
+					Accum_Prob +=CaMKII_trans_probs[icleft][i][1];
+					while (unidev[i+2+NRyRs_per_cleft+base_ind]>Accum_Prob){
+						count++;
+						Accum_Prob += CaMKII_trans_probs[icleft][i][count];
+					}
+					CaMKII_state[icleft][i] = CaMKII_index[icleft][i][count];
+					//THIS IS ONLY FOR DEBUGGING PURPOSES
+					//CaMKII_state[icleft][i] = 2;
+				}
+			} // for
+
+			Accum_Prob=LCCPhosph_trans_probs[icleft][0];
+			if(unidev[2+NRyRs_per_cleft+Nmon_per_holo+base_ind]>Accum_Prob){
+				count = 1; //we know that state has been changed
+				Accum_Prob +=LCCPhosph_trans_probs[icleft][1];
+				while (unidev[2+NRyRs_per_cleft+Nmon_per_holo+base_ind]>Accum_Prob){
+					count++;
+					Accum_Prob += LCCPhosph_trans_probs[icleft][count];
+				}
+				LCCPhosph_state[icleft] = LCCPhosph_index[icleft][count];
+			}
 
 			if (unidev[(icleft+1)*NRVseqs_per_cleft-1]>=Ito2_exitprob[icleft]) {
 				Ito2_state[icleft] = 3 - Ito2_state[icleft];
@@ -254,11 +316,19 @@ void simfru_local(const double time0,const double timef,
 
 		// Reset indicator variables for which channels are open
 		for(icleft = 0;icleft<Nclefts_FRU;icleft++) {
-			if ( ((LType_state[icleft][index_LCC_states]==O1_LType)||(LType_state[icleft][index_LCC_states]==O2_LType)) 
-			     && (LType_state[icleft][index_LCC_Vinact]==Oy_LType)) {
+			  if ( ((LType_state[icleft][index_LCC_states]==O1_LType)||(LType_state[icleft][index_LCC_states]==O2_LType)) 
+			     && (LType_state[icleft][index_LCC_Vinact]==Oy_LType)) 
+			  {
 				LType_open[icleft] = 1.0;
-			} else {
+			  } else {
 				LType_open[icleft] = 0.0;
+			  } //if
+			
+			if (LCCPhosph_state[icleft]==6)
+			{
+				LType_PCa[icleft] = PCa2;
+			} else {
+				LType_PCa[icleft] = PCa1;
 			} //if
 
 			if (signal1[icleft]==1) {

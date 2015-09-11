@@ -45,7 +45,9 @@ const double Vmyo= 25.84e-6; // myoplasmic volume (uL)
 const double VJSR= (((double)Nclefts_FRU)*0.53*0.5*0.2*1.05e-10); // network SR volume (uL)
 const double VSS= (0.5*0.2*2.03e-12); // subspace volume (uL)
 
-const double  PCa= (1.5/2.8*0.2*0.9*0.9468e-11); //(cm/s) *uF  
+const double  PCa1= (1.5/2.8*0.2*0.9*0.9468e-11); //(cm/s) *uF 
+//const double  PCa2= 1.7*(1.5/2.8*0.2*0.9*0.9468e-11); //(cm/s) * uF 
+const double  PCa2=(1.5/2.8*0.2*0.9*0.9468e-11); //(cm/s) * uF 
 
 const double  PCl= 2.65e-15; //(cm/s) *uF 
 	 
@@ -89,3 +91,38 @@ const double  tauxfer= 0.005;
 //const double  tauss2ss= (10.0*tauxfer);
 const double  tauss2ss= (10.0*0.005);
 
+/*-----------------CaMKII Parameters----------------------------------*/
+const double SSCaM= 0.2; 
+       // Subspace calmodulin (mM) corresponding to 20 CaMs/subspace
+const double PP1 =1;//Change made on Mar 27, 2008 200;
+       // PP1 subspace concentration (uM) corresponding to 10 molecules/subspace
+const double PP2A = 0.6;
+//25; //Change made on Mar 27, 2008 25;
+       // PP2A subspace concentration (uM) corresponding to 10 molecules/subspace
+const double VmaxPP1= 0.0065;
+//0.00496;//Change made on Mar 27, 2008 0.000019375;
+       // Michaelis Menten constant (1/ms)
+const double VmaxPP2A= 0.001199;
+//0.000035;
+       // Michaelis Menten constant (1/ms)
+
+
+
+/******
+Act_coeff[0]=0;
+	// there is no state 0, so this is just a place holder
+Act_coeff[1]=0;
+	// activity coefficient in state 1
+Act_coeff[2]=0.75;
+	//activity coefficient in state 2
+Act_coeff[3]=1;
+	//activity coefficient in state 3
+Act_coeff[4]=0.8;
+	//activity coefficient in state 4
+Act_coeff[5]=0.8;
+	//activity coefficient in state 5
+Act_coeff[6]=0.17;
+	//activity coefficient in state 6
+Act_coeff[7]=0;
+	//activity coefficient in state 7
+************/

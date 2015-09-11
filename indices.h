@@ -52,6 +52,13 @@
 #define index_PIto2_Open 9
 #define index_CaJSRtot 10
 #define index_CaSStot 11
+#define index_CaMKII_Act 12
+#define index_LCCP0 13
+#define index_LCCP1 14
+#define index_LCCP2 15
+#define index_LCCP3 16
+#define index_CaMKII_Phosph 17
+#define index_Mode2Open 18
 
 #define index_INa 0
 #define index_IKr 1

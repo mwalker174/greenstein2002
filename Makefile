@@ -9,12 +9,12 @@ OBJS =  caf.o calc_fru_flux_local.o \
 #   Compilers for Beowulf Cluster (Intel nodes)   #
 ###################################################
 #for RK4 integrator
-LIBS = -lm
+LIBS = -lm #-lmpi -limf 
 INC = -I.
 
 # Default is Intel Compiled LAM
 #COMP=mpiCC
-COMP=mpicc
+COMP=mpicc #-i-dynamic
 #COMP=mpicc 
 #CFLAGS=-march=pentium4 -mcpu=pentium4 -O3 -xW -tpp7 -ip -ipo
 COMP_FLAGS=-O3

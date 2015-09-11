@@ -43,9 +43,9 @@ void send_calc_fru_flux(double FRUdep_states[Nstates_FRUdep],
 {
   int msg=MSG_CALC_FRU_FLUX;
   int i;
-  double num_stat[6],total_num[6];
+  double num_stat[7],total_num[7];
   double Cai,CaNSR,V,Jtr_local,Jxfer_local,sum_CaSS_local,sum_CaJSR_local;
-  double ICa_numerator,NIto2_Open,ICa_local,Ito2_local;
+  double ICa_numerator1,ICa_numerator2,NIto2_Open,ICa_local,Ito2_local; 
   double VF_over_RT, VFsq_over_RT, exp_2VFRT,exp_VFRT;
 
 #if USE_MPI
@@ -64,17 +64,17 @@ void send_calc_fru_flux(double FRUdep_states[Nstates_FRUdep],
   //printf("NFRU_local=%d\n",NFRU_local);
 
   if (NFRU_local>0) {
-    calc_fru_flux_local(NFRU_local,LType_state_local,Ito2_state_local,FRU_states_local,num_stat);
+    calc_fru_flux_local(NFRU_local,LType_state_local,LCCPhosph_state_local,Ito2_state_local,FRU_states_local,num_stat);
   } else {
-    for(i=0;i<6;i++)
+    for(i=0;i<7;i++)
       num_stat[i]=0;
   }
 
 #if USE_MPI
-  for(i=0;i<5;i++)
+  for(i=0;i<7;i++)
     total_num[i]=0;
 
-  MPI_Reduce(num_stat,total_num,5,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+  MPI_Reduce(num_stat,total_num,7,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
 
   sum_CaSS_local=total_num[0];
   sum_CaJSR_local=total_num[1];
@@ -86,18 +86,23 @@ void send_calc_fru_flux(double FRUdep_states[Nstates_FRUdep],
   total_num[2]=num_stat[2];
   total_num[3]=num_stat[3];
   NIto2_Open=num_stat[4];
+  total_num[5]=num_stat[5];
+  total_num[6]=num_stat[6];
 #endif
 
   // Compute actual currents
   if (fabs(V)<1.e-6) { // First order Taylor expansion
-    ICa_numerator=total_num[2]-total_num[3]*Cao*0.341; 
-    ICa_local = PCa*2.0*1000.0*Faraday*ICa_numerator;
+    ICa_numerator1=total_num[2]-total_num[3]*Cao*0.341;
+    ICa_numerator2=total_num[5]-total_num[6]*Cao*0.341; 
+    ICa_local = PCa1*2.0*1000.0*Faraday*ICa_numerator1 + PCa2*2.0*1000.0*Faraday*ICa_numerator2;
     ICa_local = ICa_local/Acap;		// divide by uF(Acap) to get current normalized to surface area
     Ito2_local = ((double)NIto2_Open)*PCl*1000.0*Faraday*(Clo-Cli);
     Ito2_local = Ito2_local/Acap;	// divide by uF(Acap) to get current normalized to surface area
   } else {
-    ICa_numerator=total_num[2]*exp_2VFRT-total_num[3]*Cao*0.341; 
-    ICa_local = PCa*4.0*VFsq_over_RT*ICa_numerator/(exp_2VFRT-1.0); 
+    ICa_numerator1=total_num[2]*exp_2VFRT-total_num[3]*Cao*0.341;
+    ICa_numerator2=total_num[5]*exp_2VFRT-total_num[6]*Cao*0.341;  
+    ICa_local = PCa1*4.0*VFsq_over_RT*ICa_numerator1/(exp_2VFRT-1.0) + 
+		PCa2*4.0*VFsq_over_RT*ICa_numerator2/(exp_2VFRT-1.0); 
     ICa_local = ICa_local/Acap;		// divide by uF(Acap) to get current normalized to surface area
     Ito2_local = ((double)NIto2_Open)*PCl*VFsq_over_RT*(Cli-Clo*exp_VFRT)/(1.0 - exp_VFRT);
     Ito2_local = Ito2_local/Acap;	// divide by uF(Acap) to get current normalized to surface area
@@ -123,29 +128,31 @@ void send_calc_fru_avg(double state[N],double otherstate[Nother])
 {
   int msg=MSG_CALC_FRU_AVG; 
   double CaSS,CaJSR,CaTOT_SS,CaTOT_JSR;
-  double JRyR,PRyR_Open,PNorm_Mode,PnotVinact,PLType_Open,PIto2_Open;
+  double JRyR,PRyR_Open,PNorm_Mode,PnotVinact,PLType_Open,PIto2_Open,CaMKII_Act;
+  double LCCP0, LCCP1, LCCP2, LCCP3, CaMKII_Phosph;
+  double Mode2Open;
   double NRyR_ready; // converted to double from int
-  double num_stat[11];
+  double num_stat[18];
   int i;
 
 #if USE_MPI
-  double total_num[11];
+  double total_num[18];
 
   MPI_Bcast(&msg,1,MPI_INT,0,MPI_COMM_WORLD);
 #endif
 
   if (NFRU_local>0) {
-    calc_fru_avg_local(num_stat,NFRU_local,FRU_states_local,LType_state_local,RyR_state_local,Ito2_state_local);
+    calc_fru_avg_local(num_stat,NFRU_local,FRU_states_local,LType_state_local,RyR_state_local,CaMKII_state_local,LCCPhosph_state_local,Ito2_state_local);
   } else {
-    for(i=0;i<11;i++)
+    for(i=0;i<18;i++)
       num_stat[i]=0;
   }
 
 #if USE_MPI
-  for(i=0;i<11;i++)
+  for(i=0;i<18;i++)
     total_num[i]=0;
 
-  MPI_Reduce(num_stat,total_num,11,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+  MPI_Reduce(num_stat,total_num,18,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
 
   CaSS=total_num[0];
   CaJSR=total_num[1];
@@ -158,6 +165,13 @@ void send_calc_fru_avg(double state[N],double otherstate[Nother])
   PnotVinact=total_num[8];
   PLType_Open=total_num[9];
   PIto2_Open=total_num[10];
+  CaMKII_Act=total_num[11];
+  LCCP0=total_num[12];
+  LCCP1=total_num[13];
+  LCCP2=total_num[14];
+  LCCP3=total_num[15];
+  CaMKII_Phosph=total_num[16]; 
+  Mode2Open=total_num[17];
 #else
   CaSS=num_stat[0];
   CaJSR=num_stat[1];
@@ -170,6 +184,13 @@ void send_calc_fru_avg(double state[N],double otherstate[Nother])
   PnotVinact=num_stat[8];
   PLType_Open=num_stat[9];
   PIto2_Open=num_stat[10];
+  CaMKII_Act=num_stat[11];
+  LCCP0=num_stat[12];
+  LCCP1=num_stat[13];
+  LCCP2=num_stat[14];
+  LCCP3=num_stat[15];
+  CaMKII_Phosph=num_stat[16];
+  Mode2Open=num_stat[17];
 #endif
 
   otherstate[index_CaSSavg]  = CaSS/(double)(NFRU_sim*Nclefts_FRU);
@@ -188,6 +209,13 @@ void send_calc_fru_avg(double state[N],double otherstate[Nother])
   otherstate[index_PIto2_Open] = PIto2_Open/(double)(NFRU_sim*Nclefts_FRU);
   otherstate[index_CaJSRtot] = 1.e6*CaTOT_SS*VSS*NFRU_scale;
   otherstate[index_CaSStot] = 1.e6*CaTOT_JSR*VJSR*NFRU_scale;
+  otherstate[index_CaMKII_Act] = CaMKII_Act/(double)(Nmon_per_holo*Nclefts_FRU*NFRU_sim);
+  otherstate[index_LCCP0] = LCCP0;
+  otherstate[index_LCCP1] = LCCP1;
+  otherstate[index_LCCP2] = LCCP2;
+  otherstate[index_LCCP3] = LCCP3;
+  otherstate[index_CaMKII_Phosph] = CaMKII_Phosph/(double)(Nmon_per_holo*Nclefts_FRU*NFRU_sim);
+  otherstate[index_Mode2Open] = Mode2Open/(double)(NFRU_sim*Nclefts_FRU); 
 }
 
 /* 
@@ -199,6 +227,8 @@ void send_calc_fru_avg(double state[N],double otherstate[Nother])
 void initialize_mpi_state(double FRU_states[NFRU_sim_max][Nstates_FRU],
 			  int LType_state[NFRU_sim_max][Nclefts_FRU][Nindepstates_LType],
 			  int RyR_state[NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],
+			  int CaMKII_state[NFRU_sim_max][Nclefts_FRU][Nmon_per_holo],
+			  int LCCPhosph_state[NFRU_sim_max][Nclefts_FRU],
 			  int Ito2_state[NFRU_sim_max][Nclefts_FRU],
 			  int mti[NFRU_sim_max],
 			  unsigned long mt[NFRU_sim_max][mtN+1])
@@ -255,6 +285,10 @@ void initialize_mpi_state(double FRU_states[NFRU_sim_max][Nstates_FRU],
 	tag++; reqno++;
 	MPI_Isend(&RyR_state[test_fru][0][0],Nclefts_FRU*NRyRs_per_cleft,MPI_INT,p,tag,MPI_COMM_WORLD,&request[reqno]);
 	tag++; reqno++;
+	MPI_Isend(&CaMKII_state[test_fru][0][0],Nclefts_FRU*Nmon_per_holo,MPI_INT,p,tag,MPI_COMM_WORLD,&request[reqno]);
+	tag++; reqno++;
+	MPI_Isend(&LCCPhosph_state[test_fru][0],Nclefts_FRU,MPI_INT,p,tag,MPI_COMM_WORLD,&request[reqno]);
+	tag++; reqno++;
 	MPI_Isend(&Ito2_state[test_fru][0],Nclefts_FRU,MPI_INT,p,tag,MPI_COMM_WORLD,&request[reqno]);
 	tag++; reqno++;
 	MPI_Isend(&FRU_states[test_fru][0],Nstates_FRU,MPI_DOUBLE,p,tag,MPI_COMM_WORLD,&request[reqno]);
@@ -267,6 +301,10 @@ void initialize_mpi_state(double FRU_states[NFRU_sim_max][Nstates_FRU],
 	MPI_Isend(&LType_state[iFRU][0][0],Nclefts_FRU*Nindepstates_LType,MPI_INT,p,tag,MPI_COMM_WORLD,&request[reqno]);
 	tag++; reqno++;
 	MPI_Isend(&RyR_state[iFRU][0][0],Nclefts_FRU*NRyRs_per_cleft,MPI_INT,p,tag,MPI_COMM_WORLD,&request[reqno]);
+	tag++; reqno++;
+	MPI_Isend(&CaMKII_state[iFRU][0][0],Nclefts_FRU*Nmon_per_holo,MPI_INT,p,tag,MPI_COMM_WORLD,&request[reqno]);
+	tag++; reqno++;
+	MPI_Isend(&LCCPhosph_state[iFRU][0],Nclefts_FRU,MPI_INT,p,tag,MPI_COMM_WORLD,&request[reqno]);
 	tag++; reqno++;
 	MPI_Isend(&Ito2_state[iFRU][0],Nclefts_FRU,MPI_INT,p,tag,MPI_COMM_WORLD,&request[reqno]);
 	tag++; reqno++;
@@ -306,6 +344,10 @@ void initialize_mpi_state(double FRU_states[NFRU_sim_max][Nstates_FRU],
 	for (i = 0; i < NRyRs_per_cleft; i++) {
 	  RyR_state_local[iFRU][icleft][i] = RyR_state[FRU_start+iFRU][icleft][i];
 	}
+	for (i=0; i<Nmon_per_holo; i++){
+	  CaMKII_state_local[iFRU][icleft][i] = CaMKII_state[FRU_start+iFRU][icleft][i];
+	}
+	LCCPhosph_state_local[iFRU][icleft] = LCCPhosph_state[FRU_start+iFRU][icleft];
 	LType_state_local[iFRU][icleft][index_LCC_states] = LType_state[FRU_start+iFRU][icleft][index_LCC_states];
 	LType_state_local[iFRU][icleft][index_LCC_Vinact] = LType_state[FRU_start+iFRU][icleft][index_LCC_Vinact];
 	Ito2_state_local[iFRU][icleft] = Ito2_state[FRU_start+iFRU][icleft];
@@ -318,6 +360,8 @@ void initialize_mpi_state(double FRU_states[NFRU_sim_max][Nstates_FRU],
 #else
     memcpy(&FRU_states_local[0][0], &FRU_states[FRU_start][0], sizeof(double) * NFRU_local * Nstates_FRU);
     memcpy(&RyR_state_local[0][0][0], &RyR_state[FRU_start][0][0], sizeof(int) * NFRU_local * Nclefts_FRU * NRyRs_per_cleft);
+    memcpy(&CaMKII_state_local[0][0][0], &CaMKII_state[FRU_start][0][0], sizeof(int)*NFRU_local*Nclefts_FRU*Nmon_per_holo);
+    memcpy(&LCCPhosph_state_local[0][0], &LCCPhosph_state[FRU_start][0], sizeof(int)*NFRU_local*Nclefts_FRU);
     memcpy(&LType_state_local[0][0][0], &LType_state[FRU_start][0][0], sizeof(int) * NFRU_local * Nclefts_FRU * Nindepstates_LType);
     memcpy(&Ito2_state_local[0][0], &Ito2_state[FRU_start][0], sizeof(int) * NFRU_local * Nclefts_FRU);
     memcpy(&mti_local[0], &mti[FRU_start], sizeof(int) * NFRU_local);
@@ -379,7 +423,7 @@ void distrib_simFRU(double st_time,double end_time,
   double num_stat[7],total_num[7];
   double input[2+2*Nstates_FRUdep];
   double Cai,CaNSR,V,Jtr_local,Jxfer_local,sum_CaSS_local,sum_CaJSR_local;
-  double ICa_numerator,ICa_local,Ito2_local,NIto2_Open;
+  double ICa_numerator1,ICa_numerator2,ICa_local,Ito2_local,NIto2_Open;
   double VF_over_RT, VFsq_over_RT, exp_2VFRT,exp_VFRT;
 	
   cont=2;
@@ -395,6 +439,7 @@ void distrib_simFRU(double st_time,double end_time,
 #if USE_MPI
   // Send command to compute and required data to slave processes
   MPI_Bcast(&cont,1,MPI_INT,0,MPI_COMM_WORLD);
+  //printf("About to call parallel simfru with time end equal to %e\n",end_time);
   MPI_Bcast(input,2+2*Nstates_FRUdep,MPI_DOUBLE, 0, MPI_COMM_WORLD);
 #endif
 
@@ -414,24 +459,26 @@ void distrib_simFRU(double st_time,double end_time,
 		   FRUdep_statesf,
 		   &LType_state_local[i][0][0],
 		   &RyR_state_local[i][0][0],
+		   &CaMKII_state_local[i][0][0],
+		   &LCCPhosph_state_local[i][0],
 		   &Ito2_state_local[i][0],
 		   &FRU_states_local[i][0],
 		   &mti_local[i],
 		   &mt_local[i][0]);
     }
-    calc_fru_flux_local(NFRU_local,LType_state_local,Ito2_state_local,
+    calc_fru_flux_local(NFRU_local,LType_state_local,LCCPhosph_state_local,Ito2_state_local,
 			FRU_states_local,num_stat);
   } else {
-    for(i=0;i<4;i++)
+    for(i=0;i<7;i++)
       num_stat[i]=0;
   }
 
 #if USE_MPI  
   // Collect answers from slave processes
-  for(i=0;i<6;i++)
+  for(i=0;i<8;i++)
     total_num[i]=0;
 
-  MPI_Reduce(num_stat,total_num,5,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+  MPI_Reduce(num_stat,total_num,7,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
 
   sum_CaSS_local=total_num[0];
   sum_CaJSR_local=total_num[1];
@@ -442,18 +489,24 @@ void distrib_simFRU(double st_time,double end_time,
   total_num[2]=num_stat[2];
   total_num[3]=num_stat[3];
   NIto2_Open=num_stat[4];
+  total_num[5]=num_stat[5];
+  total_num[6]=num_stat[6];
 #endif
 
   // Compute actual currents
   if (fabs(V)<1.e-6) { // First order Taylor expansion
-    ICa_numerator=total_num[2]-total_num[3]*Cao*0.341; 
-    ICa_local = PCa*2.0*1000.0*Faraday*ICa_numerator;
+    ICa_numerator1=total_num[2]-total_num[3]*Cao*0.341;
+    ICa_numerator2=total_num[5]-total_num[6]*Cao*0.341; 
+    ICa_local = PCa1*2.0*1000.0*Faraday*ICa_numerator1 + 
+		PCa2*2.0*1000.0*Faraday*ICa_numerator2;
     ICa_local = ICa_local/Acap;		// divide by uF(Acap) to get current normalized to surface area
     Ito2_local = ((double)NIto2_Open)*PCl*1000.0*Faraday*(Clo-Cli);
     Ito2_local = Ito2_local/Acap;	// divide by uF(Acap) to get current normalized to surface area
   } else {
-    ICa_numerator=total_num[2]*exp_2VFRT-total_num[3]*Cao*0.341; 
-    ICa_local = PCa*4.0*VFsq_over_RT*ICa_numerator/(exp_2VFRT-1.0); 
+    ICa_numerator1=total_num[2]*exp_2VFRT-total_num[3]*Cao*0.341;
+    ICa_numerator2=total_num[5]*exp_2VFRT-total_num[6]*Cao*0.341; 
+    ICa_local = PCa1*4.0*VFsq_over_RT*ICa_numerator1/(exp_2VFRT-1.0) + 
+		PCa2*4.0*VFsq_over_RT*ICa_numerator2/(exp_2VFRT-1.0); 
     ICa_local = ICa_local/Acap;		// divide by uF(Acap) to get current normalized to surface area
     Ito2_local = ((double)NIto2_Open)*PCl*VFsq_over_RT*(Cli-Clo*exp_VFRT)/(1.0 - exp_VFRT);
     Ito2_local = Ito2_local/Acap;	// divide by uF(Acap) to get current normalized to surface area
@@ -509,6 +562,8 @@ void send_resume_state(void)
 void parallel_get_FRUs(double FRU_states[NFRU_sim_max][Nstates_FRU],
 		       int LType_state[NFRU_sim_max][Nclefts_FRU][Nindepstates_LType],
 		       int RyR_state[NFRU_sim_max][Nclefts_FRU][NRyRs_per_cleft],
+		       int CaMKII_state[NFRU_sim_max][Nclefts_FRU][Nmon_per_holo],
+		       int LCCPhosph_state[NFRU_sim_max][Nclefts_FRU],
 		       int Ito2_state[NFRU_sim_max][Nclefts_FRU],
 		       unsigned long mt[NFRU_sim_max][mtN+1],int mti[NFRU_sim_max])
 {
@@ -556,6 +611,12 @@ void parallel_get_FRUs(double FRU_states[NFRU_sim_max][Nstates_FRU],
       MPI_Irecv(&RyR_state[iFRU][0][0],Nclefts_FRU*NRyRs_per_cleft,MPI_INT,source,tag,MPI_COMM_WORLD,&request[reqno]);
       reqno++;
       tag++;
+      MPI_Irecv(&CaMKII_state[iFRU][0][0],Nclefts_FRU*Nmon_per_holo,MPI_INT,source,tag,MPI_COMM_WORLD,&request[reqno]);
+      reqno++;
+      tag++;
+      MPI_Irecv(&LCCPhosph_state[iFRU][0],Nclefts_FRU,MPI_INT,source,tag,MPI_COMM_WORLD,&request[reqno]);
+      reqno++;
+      tag++;
       MPI_Irecv(&Ito2_state[iFRU][0],Nclefts_FRU,MPI_INT,source,tag,MPI_COMM_WORLD,&request[reqno]);
       reqno++;
       tag++;
@@ -596,6 +657,10 @@ void parallel_get_FRUs(double FRU_states[NFRU_sim_max][Nstates_FRU],
 	for (i = 0; i < NRyRs_per_cleft; i++) {
 	  RyR_state[FRU_start+iFRU][icleft][i] = RyR_state_local[iFRU][icleft][i];
 	}
+	for (i=0; i< Nmon_per_holo; i++){
+	  CaMKII_state[FRU_start+iFRU][icleft][i] = CaMKII_state_local[iFRU][icleft][i];
+	}
+	LCCPhosph_state[FRU_start+iFRU][icleft]= LCCPhosph_state_local[iFRU][icleft];
 	LType_state[FRU_start+iFRU][icleft][index_LCC_states] = LType_state_local[iFRU][icleft][index_LCC_states];
 	LType_state[FRU_start+iFRU][icleft][index_LCC_Vinact] = LType_state_local[iFRU][icleft][index_LCC_Vinact];
 	Ito2_state[FRU_start+iFRU][icleft] = Ito2_state_local[iFRU][icleft];
@@ -608,6 +673,8 @@ void parallel_get_FRUs(double FRU_states[NFRU_sim_max][Nstates_FRU],
 #else
     memcpy(&FRU_states[FRU_start][0], &FRU_states_local[0][0], sizeof(double) * NFRU_local * Nstates_FRU);
     memcpy(&RyR_state[FRU_start][0][0], &RyR_state_local[0][0][0], sizeof(int) * NFRU_local * Nclefts_FRU * NRyRs_per_cleft);
+    memcpy(&CaMKII_state[FRU_start][0][0], &CaMKII_state_local[0][0][0], sizeof(int)*NFRU_local*Nclefts_FRU*Nmon_per_holo);
+    memcpy(&LCCPhosph_state[FRU_start][0], &LCCPhosph_state_local[0][0], sizeof(int)*NFRU_local*Nclefts_FRU);
     memcpy(&LType_state[FRU_start][0][0], &LType_state_local[0][0][0], sizeof(int) * NFRU_local * Nclefts_FRU * 2);
     memcpy(&Ito2_state[FRU_start][0], &Ito2_state_local[0][0], sizeof(int) * NFRU_local * Nclefts_FRU);
     memcpy(&mti[FRU_start], &mti_local[0], sizeof(int) * NFRU_local);
@@ -645,7 +712,7 @@ void end_mpi(void)
   int cont=1; // exit
 
 #if USE_MPI
-  MPI_Bcast(&cont,1,MPI_INTEGER,0,MPI_COMM_WORLD);
+  MPI_Bcast(&cont,1,MPI_INT,0,MPI_COMM_WORLD);
   MPI_Finalize();
 #endif
 }

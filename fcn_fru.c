@@ -24,6 +24,7 @@ void fcn_fru(const double time_FRU,
 	     const double FRU_states1[Nstates_FRU],
 	     const double FRUdep_states[Nstates_FRUdep],
 	     const double LType_open[Nclefts_FRU],
+	     const double LType_PCa[Nclefts_FRU],
 	     const int NRyR_open[Nclefts_FRU],
 	     double dFRU_states1[Nstates_FRU])
 {
@@ -85,10 +86,10 @@ void fcn_fru(const double time_FRU,
 	  //     ICa(icleft] = PCa*2.0*1000.0*Faraday*a1*LType_open[icleft] //uA
 	  //     JDHPR(icleft] = -ICa(icleft]*JDHconstant
 	  //   }
-	  JDHPR_1 = -PCa*2.0*1000.0*Faraday*(CaSS_1-Cao*0.341)*LType_open[0]*JDHconstant;
-	  JDHPR_2 = -PCa*2.0*1000.0*Faraday*(CaSS_2-Cao*0.341)*LType_open[1]*JDHconstant;
-	  JDHPR_3 = -PCa*2.0*1000.0*Faraday*(CaSS_3-Cao*0.341)*LType_open[2]*JDHconstant;
-	  JDHPR_4 = -PCa*2.0*1000.0*Faraday*(CaSS_4-Cao*0.341)*LType_open[3]*JDHconstant;
+	  JDHPR_1 = -LType_PCa[0]*2.0*1000.0*Faraday*(CaSS_1-Cao*0.341)*LType_open[0]*JDHconstant;
+	  JDHPR_2 = -LType_PCa[1]*2.0*1000.0*Faraday*(CaSS_2-Cao*0.341)*LType_open[1]*JDHconstant;
+	  JDHPR_3 = -LType_PCa[2]*2.0*1000.0*Faraday*(CaSS_3-Cao*0.341)*LType_open[2]*JDHconstant;
+	  JDHPR_4 = -LType_PCa[3]*2.0*1000.0*Faraday*(CaSS_4-Cao*0.341)*LType_open[3]*JDHconstant;
 	} else {
 	  //  	  a2 = exp_VFRT-1.0;
 	  //   for(icleft = 1;icleft<=Nclefts_FRU
@@ -98,11 +99,12 @@ void fcn_fru(const double time_FRU,
 	  //   }
 
 	  // The same unrolled
-	  a2 = PCa*4.0*VFsq_over_RT/(exp_VFRT-1.0)*JDHconstant;
-	  JDHPR_1 = -(CaSS_1*exp_VFRT-Cao*0.341)*a2*LType_open[0];
-	  JDHPR_2 = -(CaSS_2*exp_VFRT-Cao*0.341)*a2*LType_open[1];
-	  JDHPR_3 = -(CaSS_3*exp_VFRT-Cao*0.341)*a2*LType_open[2];
-	  JDHPR_4 = -(CaSS_4*exp_VFRT-Cao*0.341)*a2*LType_open[3];
+	  //a2 = PCa*4.0*VFsq_over_RT/(exp_VFRT-1.0)*JDHconstant;
+	  a2 = 4.0*VFsq_over_RT/(exp_VFRT-1.0)*JDHconstant;
+	  JDHPR_1 = -(CaSS_1*exp_VFRT-Cao*0.341)*a2*LType_PCa[0]*LType_open[0];
+	  JDHPR_2 = -(CaSS_2*exp_VFRT-Cao*0.341)*a2*LType_PCa[1]*LType_open[1];
+	  JDHPR_3 = -(CaSS_3*exp_VFRT-Cao*0.341)*a2*LType_PCa[2]*LType_open[2];
+	  JDHPR_4 = -(CaSS_4*exp_VFRT-Cao*0.341)*a2*LType_PCa[3]*LType_open[3];
 	}
 
 	// for(icleft = 0;icleft<Nclefts_FRU;icleft++) {
