@@ -10,20 +10,20 @@ OBJS =  caf.o calc_fru_flux_local.o \
 
 # For Linux with GCC
 #
-#COMP = gcc
-#LIBS = -lm
-#OPT_FLAGS = -O3
+COMP = mpicc
+LIBS = -lm
+OPT_FLAGS = -O3
 #LARGE_FLAGS = 
 #DEBUG = 
 
 # For IBM AIX with xlc (mpcc is xlc with MPI)
-COMP = mpcc
-LIBS = -lm -lmass #-bnso -bI:/lib/syscalls.exp # static linking 
-OPT_FLAGS=-O5 -qarch=auto -qtune=auto -qcache=auto -qstrict 
-COMP_FLAGS = -qcpluscmt $(OPT_FLAGS) $(LARGE_FLAGS)
-LARGE_FLAGS= 
-PROFILING = 
-DEBUG	=
+#COMP = mpcc
+#LIBS = -lm -lmass #-bnso -bI:/lib/syscalls.exp # static linking 
+#OPT_FLAGS=-O5 -qarch=auto -qtune=auto -qcache=auto -qstrict 
+#COMP_FLAGS = -qcpluscmt $(OPT_FLAGS) $(LARGE_FLAGS)
+#LARGE_FLAGS= 
+#PROFILING = 
+#DEBUG	=
 
 # For IBM AIX with xlc (mpcc is xlc with MPI)
 #COMP = mpcc
