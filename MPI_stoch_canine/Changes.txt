@@ -1,0 +1,11 @@
+Changes from original code by Joseph Greenstein
+===============================================
+
+- rk4am integrator is replaced by Prince-Dormand integrator
+- ran2 from Numerical Receipes is replaced by Mersenne Twister, mt19937
+- Lots of small speedups 
+- Dynamical FRU number: low and high FRU number phases
+- IStim added to Ki
+- Na part of IKv14 is added to Nai, not to Ki
+- Nai and Ki are fixed currently
+

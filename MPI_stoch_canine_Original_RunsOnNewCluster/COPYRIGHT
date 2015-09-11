@@ -1,0 +1,19 @@
+       ------------------------------------------------------------------
+
+         NOTICE OF COPYRIGHT AND OWNERSHIP OF SOFTWARE
+         Copyright 2002, The Johns Hopkins University
+            School of Medicine. All rights reserved.
+	    For research use only; commercial use prohibited.
+	    Distribution without permission of Raimond L. Winslow
+	    not permitted. rwinslow@bme.jhu.edu
+
+         Name of Program: stochastic Canine model, MPI C-version
+         Version: Documented Version, beta
+         Date: November 2003
+
+
+      ------------------------------------------------------------------
+
+		This copyright applies to all files in this distribution, 
+		EXCEPT file mt19937_local.c which is covered by a copyright 
+		as stated in the beginning of the file.

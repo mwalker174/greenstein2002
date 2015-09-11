@@ -1,0 +1,23 @@
+HOW TO RUN
+==========
+
+This code is best to be run with MPI, although it does run without MPI.
+To compile code, appropriate modifications to Makefile should be made.
+The default Makefile should compile and run in IBM AIX with xlc compiler.
+
+To run the code in IBM AIX with MPI, first compile the code with 'make'. Then
+add a host.list file containing list of MPI hosts, and check .rhosts. 
+To run the code with 6 processes the command is
+
+	poe ./stoch -procs 6
+
+The code has been tested on IBM AIX (xlc) and Windows (Visual C++ .NET). 
+The code is known to work with 48 processors, but it should too run well 
+on one processor.
+
+File 'parameters.h' contains most tunable parameters for the model. There 
+are controls for length of simulation, desired accuracy of numerical integration,
+voltage clamp etc.
+
+Once the code has run, it produces files states.txt, otherstates.txt and
+currents.txt describing results. The files contain descriptive headers.

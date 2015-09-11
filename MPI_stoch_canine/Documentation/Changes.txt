@@ -1,0 +1,10 @@
+Changes from original fortran code by Joseph Greenstein
+=======================================================
+- rk4am integrator is replaced by Prince-Dormand integrator
+- ran2 from Numerical Receipes is replaced by Mersenne Twister, mt19937
+- Dynamical FRU number: low and high FRU number phases
+- IStim added to Ki
+- Na part of IKv14 is added to Nai, not to Ki
+- New formulation of IK1
+- Model implemented in C using MPI
+- Lots of small speedups 

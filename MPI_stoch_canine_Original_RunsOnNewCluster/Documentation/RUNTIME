@@ -1,0 +1,19 @@
+Runtimes
+========
+
+Runtimes observed on IBM p690 with 6 processors for one second of simulation
+were (without use of dynamic FRU number)
+
+	FRU#	Time (s)
+	  125	  83
+	  250    113	 
+	  500    180
+	 1250    390
+	 2500    740
+	12500   3600
+
+This code is not optimized for small simulations, so time for eg 125 FRUs could be 
+improved. To get realistic results, at least 1250 FRUs should be used, depending 
+on the aims of simulations. The full model is 12500 FRUs, since that is the assumed 
+number of available functional release units in a real canine ventricular myocyte.
+

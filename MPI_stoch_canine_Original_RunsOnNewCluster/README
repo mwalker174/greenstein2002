@@ -1,0 +1,17 @@
+Stochastic Canine C code
+========================
+
+Files in this distribution implement a stochastic model of Canine ventricular myocyte,
+described by Greenstein and Winslow Biophys J 2002; 106:1288-93. This code was not used
+to run simulations described in the paper, but should produce similar results.
+
+This code is the first released version of stochastic Canine model written in C and MPI, 
+and considered beta. It has not been tested throroughly, so bug may persist. Nevertheless, 
+the code should perform well.
+
+More documentation can be found from directory 'Documentation'. 
+
+To get better understanding of the model, please see thesis of Joseph Greenstein (it can be 
+found from www.ccbm.jhu.edu) or article Greenstein, J. and Winslow, R. L.(2002) 
+"An integrative model of the cardiac ventricular myocyte incorporating local control of Ca2+ 
+release".  Biophys. J., 83: 2918-2945
