@@ -470,6 +470,8 @@ double fru_rates_local(int LType_state[Nclefts_FRU][Nindepstates_LType],
 	double k_RtoO, k_RItoI, k_RtoRI, k_OtoI;
 
 	for(icleft = 0; icleft<Nclefts_FRU;icleft++) {
+	
+		for(i=0;i<NRyRs_per_cleft;i++) {
 		
 		if(RyRPhosph_state[icleft][i]==1){
 		k_RtoO  = k_oSRCa*CaSS[icleft]*CaSS[icleft];
@@ -482,9 +484,7 @@ double fru_rates_local(int LType_state[Nclefts_FRU][Nindepstates_LType],
 		k_RtoRI = k_iSRCa*CaSS[icleft];
 		k_OtoI  = k_iSRCa*CaSS[icleft];
 		}
-
-		for(i=0;i<NRyRs_per_cleft;i++) {
-	
+ 
 		   switch (RyR_state[icleft][i]) {
 
 		   case 1:
