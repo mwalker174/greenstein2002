@@ -40,15 +40,15 @@
 #define NRVseqs_per_FRU (NRVseqs_per_cleft*Nclefts_FRU)
 
 // The number of FRUs simulated, in low FRU# phase and in high FRU# phase
-#define NFRU_sim_low 250
-#define NFRU_scale_low 50.0 // ratio of 12500/NFRU_sim_low
-#define NFRU_sim_high 250
-#define NFRU_scale_high 50.0 // ratio of 12500/NFRU_sim_high
+#define NFRU_sim_low 1000
+#define NFRU_scale_low 12.5 // ratio of 12500/NFRU_sim_low
+#define NFRU_sim_high 1000
+#define NFRU_scale_high 12.5 // ratio of 12500/NFRU_sim_high
 
 // for array sizes, has to be NFRU_sim_max> NFRU_sim_high
 // MAX_LOCAL_NFRU should probably be the same as NFRU_sim_max
-#define NFRU_sim_max 250
-#define MAX_LOCAL_NFRU 250
+#define NFRU_sim_max 1000
+#define MAX_LOCAL_NFRU 1000
 
 // Border between low and high FRU number phases
 
@@ -111,10 +111,10 @@
 //		(all pulses shifted by same amount when repetative
 //		 stimuli are used;
 
-#define pulse_duration 0
-#define pulse_amplitude 0
-#define  period 0
-#define shift 0 
+#define pulse_duration 1
+#define pulse_amplitude -100
+#define  period 1000
+#define shift 10 
 
 // Define parameters for voltage clamp.
 #define vclamp_flag 0 
@@ -125,13 +125,17 @@
 #define vclamp_period 500.0 
 
 // Define parameters for voltage clamp with a prepulse.
-#define vppclamp_flag 1 
+#define vppclamp_flag 0
 #define vppclamp_ppset  -40.0 
 #define vppclamp_ppduration 100.0 
 #define vppclamp_shift 10000.0 
 #define vppclamp_set     0.0 
 #define vppclamp_duration 300.0 
 #define vppclamp_hold  -80.0 
+//next line added on Mar 12, 2008. Remember, I-I interval = period -(pp + pulse length)
+#define vppclamp_period 500.0
+
+
 
 //	I-V relationship studies
 #define iv_flag 0

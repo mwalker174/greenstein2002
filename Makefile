@@ -1,38 +1,24 @@
-# .KEEP_STATE:
-# .SUFFIXES: .o .c
-# .SUFFIXES: .o .c .h
-
 OBJS =  caf.o calc_fru_flux_local.o \
 	data_io.o fcn.o calc_fru_avg_local.o \
         fru_rates_local.c initialize_ran.o initialize_state.o \
         simfru_local.o write_fru_props.o mt19937_local.o rk_pd54m.o \
 	fcn_fru.o dynamicFRU.o mpi_slave.o mpi_master.o parameters_fcn_fru.o
 
-# For Linux with GCC
-#
-COMP = mpicc
-LIBS = -lm
-OPT_FLAGS = -O3
-#LARGE_FLAGS = 
-#DEBUG = 
 
-# For IBM AIX with xlc (mpcc is xlc with MPI)
-#COMP = mpcc
-#LIBS = -lm -lmass #-bnso -bI:/lib/syscalls.exp # static linking 
-#OPT_FLAGS=-O5 -qarch=auto -qtune=auto -qcache=auto -qstrict 
-#COMP_FLAGS = -qcpluscmt $(OPT_FLAGS) $(LARGE_FLAGS)
-#LARGE_FLAGS= 
-#PROFILING = 
-#DEBUG	=
+###################################################
+#   Compilers for Beowulf Cluster (Intel nodes)   #
+###################################################
+#for RK4 integrator
+LIBS = -lm -lmpi -limf 
+INC = -I.
 
-# For IBM AIX with xlc (mpcc is xlc with MPI)
-#COMP = mpcc
-#LIBS = -lm -lmass #-bnso -bI:/lib/syscalls.exp # static linking 
-#OPT_FLAGS=
-#LARGE_FLAGS=-bmaxdata:0x80000000 -bmaxstack:0x80000000 
-#COMP_FLAGS = -qcpluscmt $(OPT_FLAGS) $(LARGE_FLAGS)
-#PROFILING = -pg
-#DEBUG	= -g -C -qinfo=dcl:lan:par:ret:gen:ord:cnv:cnd:por:pro:tru:c99:eff:ext:gnr:trd -qextchk -qcheck=all -qfloat=fltint -qflttrap=inexact:underflow:overflow:invalid:imprecise:zerodivide $(PROFILING) -qfloat=rndsngl:fltint:nans #-bnoquiet
+# Default is Intel Compiled LAM
+#COMP=mpiCC
+COMP=mpicc -i-dynamic
+#COMP=mpicc 
+#CFLAGS=-march=pentium4 -mcpu=pentium4 -O3 -xW -tpp7 -ip -ipo
+CFLAGS=-O3
+
 
 # The name of the executable
 NAME=stoch
